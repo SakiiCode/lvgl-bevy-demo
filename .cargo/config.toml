@@ -15,3 +15,5 @@ MCU = "esp32"
 ESP_IDF_VERSION = "v5.3.3"
 ESP_IDF_TOOLS_INSTALL_DIR = { value = "global" }
 DEP_LV_CONFIG_PATH = { relative = true, value = "." }
+CROSS_COMPILE = "xtensa-esp32-elf"
+

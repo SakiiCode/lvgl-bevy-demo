@@ -1,8 +1,7 @@
-use std::{ffi::CString, time::Instant};
+use std::ffi::CString;
 
 use anyhow::Result;
-use cstr_core::cstr;
-use embedded_graphics::{draw_target::DrawTarget, prelude::Point};
+use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Point};
 use esp_idf_svc::hal::{
     delay::{Delay, FreeRtos},
     gpio::PinDriver,
@@ -13,13 +12,16 @@ use esp_idf_svc::hal::{
     },
     units::MegaHertz,
 };
+use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
     events::Event,
-    input::{InputDevice, PointerInputData},
+    functions::lv_log_init,
+    input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     prelude::*,
+    support::LabelLongMode,
     widgets::{Arc, Label},
-    LvglWorld,
+    LvglSchedule, LvglWorld,
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use static_cell::StaticCell;
@@ -33,7 +35,10 @@ fn main() -> Result<()> {
     esp_idf_svc::sys::link_patches();
 
     // Bind the log crate to the ESP Logging facilities
-    esp_idf_svc::log::EspLogger::initialize_default();
+    //esp_idf_svc::log::EspLogger::initialize_default();
+
+    // Use LVGL logger instead
+    lv_log_init();
 
     let mut delay: Delay = Default::default();
 
@@ -101,30 +106,25 @@ fn main() -> Result<()> {
         dbg!(&output);
     }
 
-    lv_bevy_ecs::init();
-
     let mut display = Display::create(HOR_RES as i32, VER_RES as i32);
-    let buffer = DrawBuffer::<{ (HOR_RES * LINE_HEIGHT) as usize }>::create(
-        HOR_RES,
-        LINE_HEIGHT,
-        lv_color_format_t_LV_COLOR_FORMAT_RGB565,
-    );
-    println!("Display OK");
+    let buffer =
+        DrawBuffer::<{ (HOR_RES * LINE_HEIGHT) as usize }, Rgb565>::create(HOR_RES, LINE_HEIGHT);
+    info!("Display OK");
     display.register(buffer, |refresh| {
         let area = refresh.rectangle;
-        let data = refresh.colors.take().unwrap().map(|c| c.into());
+        let data = refresh.colors.iter().cloned();
 
         tft_display
             .fill_contiguous(&area, data)
             .expect("Cannot fill display");
     });
 
-    println!("Draw Buffer OK");
+    info!("Draw Buffer OK");
 
     let mut world = LvglWorld::new();
     //world.add_observer(on_insert_children);
 
-    println!("World OK");
+    info!("World OK");
 
     // Create screen and widgets
     //let mut screen: lvgl::Screen = display.get_scr_act().map_err(BoardError::DISPLAY)?;
@@ -144,8 +144,8 @@ fn main() -> Result<()> {
 
     let label = Label::create_widget()?;
     unsafe {
-        lv_label_set_long_mode(label.raw(), lv_label_long_mode_t_LV_LABEL_LONG_DOT);
-        lv_label_set_text(label.raw(), cstr!("asdasdasd").to_bytes_with_nul().as_ptr());
+        lv_label_set_long_mode(label.raw(), LabelLongMode::Dots.into());
+        lv_label_set_text(label.raw(), c"asdasdasd".to_bytes_with_nul().as_ptr());
         lv_obj_set_align(label.raw(), lv_align_t_LV_ALIGN_TOP_MID);
     }
     lv_bevy_ecs::events::lv_obj_add_event_cb(&arc, Event::ValueChanged, |mut event| unsafe {
@@ -163,32 +163,27 @@ fn main() -> Result<()> {
     world.spawn((Label, label));
     world.spawn((Arc, arc));
 
-    println!("Widgets OK");
+    info!("Widgets OK");
 
-    let mut latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
-    /*let mut latest_touch_status = InputEvent {
+    //let mut latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
+    let mut latest_touch_status = InputEvent {
         status: BufferStatus::Once,
         state: InputState::Released,
         data: Point::new(0, 0),
-    };*/
+    };
 
-    let _pointer = InputDevice::create(lv_indev_type_t_LV_INDEV_TYPE_POINTER, || {
-        latest_touch_status
-    });
+    let _pointer = InputDevice::<Pointer>::create(|| latest_touch_status);
 
-    println!("Pointer OK");
+    info!("Pointer OK");
 
     let mut is_pointer_down = false;
 
-    let mut prev_time = Instant::now();
+    let mut schedule = LvglSchedule::new();
+
     FreeRtos::delay_ms(10);
-    println!("Sleep OK");
+    info!("Sleep OK");
 
     loop {
-        let current_time = Instant::now();
-        let diff = current_time.duration_since(prev_time).as_millis() as u32;
-        prev_time = current_time;
-
         match touch.get_touch_event() {
             Ok(event) => {
                 if let Some(event) = event {
@@ -196,34 +191,31 @@ fn main() -> Result<()> {
                     #[allow(unused_assignments)]
                     match event.kind {
                         TouchKind::Start => {
-                            latest_touch_status =
-                                PointerInputData::Touch(event.point).pressed().once();
-                            /*latest_touch_status = InputEvent {
+                            //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
+                            latest_touch_status = InputEvent {
                                 status: BufferStatus::Once,
                                 state: InputState::Pressed,
                                 data: event.point,
-                            };*/
+                            };
                             is_pointer_down = true;
                         }
                         TouchKind::Move => {
                             if is_pointer_down {
-                                latest_touch_status =
-                                    PointerInputData::Touch(event.point).pressed().once();
-                                /*latest_touch_status = InputEvent {
+                                //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
+                                latest_touch_status = InputEvent {
                                     status: BufferStatus::Once,
                                     state: InputState::Pressed,
                                     data: event.point,
-                                };*/
+                                };
                             }
                         }
                         TouchKind::End => {
-                            latest_touch_status =
-                                PointerInputData::Touch(Point::new(0, 0)).released().once();
-                            /*latest_touch_status = InputEvent {
+                            //latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
+                            latest_touch_status = InputEvent {
                                 status: BufferStatus::Once,
                                 state: InputState::Released,
                                 data: Point::new(0, 0),
-                            };*/
+                            };
                             is_pointer_down = false;
                         }
                     }
@@ -235,14 +227,13 @@ fn main() -> Result<()> {
         };
 
         // Run the schedule once. If your app has a "loop", you would run this once per loop
-        //schedule.run(&mut world);
+        schedule.run(&mut world);
 
         unsafe {
-            lv_tick_inc(diff);
-            //println!("Tick OK");
+            //info!("Tick OK");
             lv_timer_handler();
         }
-        //println!("Timer OK");
+        //info!("Timer OK");
 
         FreeRtos::delay_ms(10);
     }

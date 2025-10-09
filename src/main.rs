@@ -1,4 +1,4 @@
-use std::ffi::CString;
+use std::{ffi::CString, time::Instant};
 
 use anyhow::Result;
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Point};
@@ -16,12 +16,12 @@ use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
     events::Event,
-    functions::lv_log_init,
+    functions::{lv_log_init, lv_tick_inc, lv_timer_handler},
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     prelude::*,
     support::LabelLongMode,
     widgets::{Arc, Label},
-    LvglSchedule, LvglWorld,
+    LvglWorld,
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use static_cell::StaticCell;
@@ -178,12 +178,16 @@ fn main() -> Result<()> {
 
     let mut is_pointer_down = false;
 
-    let mut schedule = LvglSchedule::new();
+    let mut prev_time = Instant::now();
 
     FreeRtos::delay_ms(10);
     info!("Sleep OK");
 
     loop {
+        let current_time = Instant::now();
+        let diff = current_time.duration_since(prev_time);
+        prev_time = current_time;
+
         match touch.get_touch_event() {
             Ok(event) => {
                 if let Some(event) = event {
@@ -226,13 +230,10 @@ fn main() -> Result<()> {
             }
         };
 
-        // Run the schedule once. If your app has a "loop", you would run this once per loop
-        schedule.run(&mut world);
+        lv_tick_inc(diff);
+        //info!("Tick OK");
 
-        unsafe {
-            //info!("Tick OK");
-            lv_timer_handler();
-        }
+        lv_timer_handler();
         //info!("Timer OK");
 
         FreeRtos::delay_ms(10);

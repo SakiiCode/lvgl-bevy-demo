@@ -15,13 +15,11 @@ use esp_idf_svc::hal::{
 use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
-    events::Event,
-    functions::{lv_log_init, lv_tick_inc, lv_timer_handler},
+    events::{lv_event_get_target_obj, Event},
+    functions::*,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
-    prelude::*,
-    support::LabelLongMode,
-    widgets::{Arc, Label},
-    LvglWorld,
+    support::{Align, LabelLongMode},
+    widgets::{Arc, Label, LvglWorld},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use static_cell::StaticCell;
@@ -53,8 +51,8 @@ fn main() -> Result<()> {
             pins.gpio13,
             Some(pins.gpio12),
             Some(pins.gpio15),
-            &DriverConfig::new().dma(Dma::Disabled),
-            &Config::new().baudrate(MegaHertz(40).into()),
+            &DriverConfig::default().dma(Dma::Auto(320 * 240 * 2)),
+            &Config::default().baudrate(MegaHertz(40).into()),
         )?,
         PinDriver::output(pins.gpio2)?,
         buffer_ref,
@@ -92,17 +90,18 @@ fn main() -> Result<()> {
 
     const HOR_RES: u32 = 320;
     const VER_RES: u32 = 240;
-    const LINE_HEIGHT: u32 = 10;
+    const LINE_HEIGHT: u32 = 240;
 
     // Pin 21, Backlight
     let mut bl = PinDriver::output(pins.gpio21)?;
     // Turn on backlight
     bl.set_high()?;
+
     if !touch.calibrated() {
         // Display is uncalibrated, resolve that before we do anything else.
         let output = touch
             .intrusive_calibration(&mut tft_display, &mut delay)
-            .expect("Cannot calibrate");
+            .expect("Could not calibrate");
         dbg!(&output);
     }
 
@@ -133,35 +132,30 @@ fn main() -> Result<()> {
     // screen_style.set_bg_color(Color::from_rgb((100, 100, 100)));
     // screen.add_style(Part::Main, &mut screen_style);
 
-    let arc = Arc::create_widget()?;
-    unsafe {
-        lv_obj_set_size(arc.raw(), 150, 150);
-        lv_arc_set_rotation(arc.raw(), 135);
-        lv_arc_set_bg_angles(arc.raw(), 0, 270);
-        lv_arc_set_value(arc.raw(), 10);
-        lv_obj_set_align(arc.raw(), lv_align_t_LV_ALIGN_CENTER);
-    }
+    let mut arc = Arc::create_widget();
+    lv_obj_set_size(&mut arc, 150, 150);
+    lv_arc_set_rotation(&mut arc, 135);
+    lv_arc_set_bg_angles(&mut arc, 0, 270);
+    lv_arc_set_value(&mut arc, 10);
+    lv_obj_set_align(&mut arc, Align::Center.into());
 
-    let label = Label::create_widget()?;
-    unsafe {
-        lv_label_set_long_mode(label.raw(), LabelLongMode::Dots.into());
-        lv_label_set_text(label.raw(), c"asdasdasd".to_bytes_with_nul().as_ptr());
-        lv_obj_set_align(label.raw(), lv_align_t_LV_ALIGN_TOP_MID);
-    }
-    lv_bevy_ecs::events::lv_obj_add_event_cb(&arc, Event::ValueChanged, |mut event| unsafe {
-        let target = lv_event_get_target_obj(&mut event);
-        let value = lv_arc_get_value(target);
-        lv_label_set_text(
-            label.raw(),
-            CString::new(value.to_string())
-                .unwrap()
-                .as_bytes_with_nul()
-                .as_ptr(),
-        );
+    let mut label = Label::create_widget();
+    lv_label_set_long_mode(&mut label, LabelLongMode::Clip.into());
+    lv_label_set_text_static(&mut label, c"asdasdasd");
+    lv_obj_set_align(&mut label, Align::TopMid.into());
+
+    lv_obj_add_event_cb(&mut arc, Event::ValueChanged, |mut event| {
+        let Some(mut obj) = lv_event_get_target_obj(&mut event) else {
+            lv_bevy_ecs::warn!("Target obj was null");
+            return;
+        };
+        let value = lv_arc_get_value(&mut obj);
+        let text = CString::new(value.to_string()).unwrap();
+        lv_label_set_text(&mut label, text.as_c_str());
     });
 
-    world.spawn((Label, label));
-    world.spawn((Arc, arc));
+    world.spawn(label);
+    world.spawn(arc);
 
     info!("Widgets OK");
 

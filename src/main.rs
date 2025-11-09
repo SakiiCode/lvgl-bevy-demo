@@ -15,7 +15,7 @@ use esp_idf_svc::hal::{
 use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
-    events::{lv_event_get_target_obj, Event},
+    events::Event,
     functions::*,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     support::{Align, LabelLongMode},
@@ -33,10 +33,13 @@ fn main() -> Result<()> {
     esp_idf_svc::sys::link_patches();
 
     // Bind the log crate to the ESP Logging facilities
-    //esp_idf_svc::log::EspLogger::initialize_default();
+    esp_idf_svc::log::EspLogger::initialize_default();
+
+    // Forward LVGL logs to EspLogger
+    lv_bevy_ecs::logging::connect();
 
     // Use LVGL logger instead
-    lv_log_init();
+    //lv_log_init();
 
     let mut delay: Delay = Default::default();
 

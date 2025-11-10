@@ -23,7 +23,7 @@ use lv_bevy_ecs::{
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use static_cell::StaticCell;
-use xpt2046::{TouchKind, TouchScreen, Xpt2046};
+use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
 static SCREEN_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
 
@@ -163,17 +163,22 @@ fn main() -> Result<()> {
     info!("Widgets OK");
 
     //let mut latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
-    let mut latest_touch_status = InputEvent {
-        status: BufferStatus::Once,
-        state: InputState::Released,
-        data: Point::new(0, 0),
-    };
 
-    let _pointer = InputDevice::<Pointer>::create(|| latest_touch_status);
+    let _pointer = InputDevice::<Pointer>::create(|| match touch.get_touch_event() {
+        Ok(event) => {
+            if let Some(event) = event {
+                unsafe { read_touch_input(Some(event)) }
+            } else {
+                unsafe { read_touch_input(None) }
+            }
+        }
+        Err(error) => {
+            dbg!(error);
+            unsafe { read_touch_input(None) }
+        }
+    });
 
     info!("Pointer OK");
-
-    let mut is_pointer_down = false;
 
     let mut prev_time = Instant::now();
 
@@ -185,54 +190,60 @@ fn main() -> Result<()> {
         let diff = current_time.duration_since(prev_time);
         prev_time = current_time;
 
-        match touch.get_touch_event() {
-            Ok(event) => {
-                if let Some(event) = event {
-                    //dbg!(&event.point);
-                    #[allow(unused_assignments)]
-                    match event.kind {
-                        TouchKind::Start => {
-                            //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
-                            latest_touch_status = InputEvent {
-                                status: BufferStatus::Once,
-                                state: InputState::Pressed,
-                                data: event.point,
-                            };
-                            is_pointer_down = true;
-                        }
-                        TouchKind::Move => {
-                            if is_pointer_down {
-                                //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
-                                latest_touch_status = InputEvent {
-                                    status: BufferStatus::Once,
-                                    state: InputState::Pressed,
-                                    data: event.point,
-                                };
-                            }
-                        }
-                        TouchKind::End => {
-                            //latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
-                            latest_touch_status = InputEvent {
-                                status: BufferStatus::Once,
-                                state: InputState::Released,
-                                data: Point::new(0, 0),
-                            };
-                            is_pointer_down = false;
-                        }
-                    }
-                }
-            }
-            Err(error) => {
-                dbg!(error);
-            }
-        };
-
         lv_tick_inc(diff);
-        //info!("Tick OK");
+        let next_timer = lv_timer_handler();
 
-        lv_timer_handler();
-        //info!("Timer OK");
-
-        FreeRtos::delay_ms(10);
+        FreeRtos::delay_ms(next_timer);
     }
+}
+
+#[allow(non_upper_case_globals)]
+unsafe fn read_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
+    static mut is_pointer_down: bool = false;
+    static mut latest_touch_status: InputEvent<Pointer> = InputEvent::<Pointer> {
+        status: BufferStatus::Once,
+        state: InputState::Released,
+        data: Point::new(0, 0),
+    };
+
+    let event = match event {
+        Some(event) => event,
+        None => {
+            return latest_touch_status;
+        }
+    };
+
+    //dbg!(&event.point);
+    #[allow(unused_assignments)]
+    match event.kind {
+        TouchKind::Start => {
+            //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
+            latest_touch_status = InputEvent {
+                status: BufferStatus::Once,
+                state: InputState::Pressed,
+                data: event.point,
+            };
+            is_pointer_down = true;
+        }
+        TouchKind::Move => {
+            if is_pointer_down {
+                //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
+                latest_touch_status = InputEvent {
+                    status: BufferStatus::Once,
+                    state: InputState::Pressed,
+                    data: event.point,
+                };
+            }
+        }
+        TouchKind::End => {
+            //latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
+            latest_touch_status = InputEvent {
+                status: BufferStatus::Once,
+                state: InputState::Released,
+                data: Point::new(0, 0),
+            };
+            is_pointer_down = false;
+        }
+    }
+    latest_touch_status
 }

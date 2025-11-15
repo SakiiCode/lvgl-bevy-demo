@@ -165,17 +165,11 @@ fn main() -> Result<()> {
     //let mut latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
 
     let _pointer = InputDevice::<Pointer>::create(|| match touch.get_touch_event() {
-        Ok(event) => {
-            if let Some(event) = event {
-                unsafe { read_touch_input(Some(event)) }
-            } else {
-                unsafe { read_touch_input(None) }
-            }
-        }
-        Err(error) => {
+        Ok(event) => unsafe { read_touch_input(event) },
+        Err(error) => unsafe {
             dbg!(error);
-            unsafe { read_touch_input(None) }
-        }
+            read_touch_input(None)
+        },
     });
 
     info!("Pointer OK");
@@ -191,9 +185,9 @@ fn main() -> Result<()> {
         prev_time = current_time;
 
         lv_tick_inc(diff);
-        let next_timer = lv_timer_handler();
+        lv_timer_handler();
 
-        FreeRtos::delay_ms(next_timer);
+        FreeRtos::delay_ms(10);
     }
 }
 

@@ -19,7 +19,7 @@ use lv_bevy_ecs::{
     functions::*,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     support::{Align, LabelLongMode},
-    widgets::{Arc, Label, LvglWorld},
+    widgets::{Arc, Label},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use static_cell::StaticCell;
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
 
     const HOR_RES: u32 = 320;
     const VER_RES: u32 = 240;
-    const LINE_HEIGHT: u32 = 240;
+    const LINE_HEIGHT: u32 = VER_RES / 20;
 
     // Pin 21, Backlight
     let mut bl = PinDriver::output(pins.gpio21)?;
@@ -123,10 +123,10 @@ fn main() -> Result<()> {
 
     info!("Draw Buffer OK");
 
-    let mut world = LvglWorld::new();
+    //let mut world = LvglWorld::default();
     //world.add_observer(on_insert_children);
 
-    info!("World OK");
+    //info!("World OK");
 
     // Create screen and widgets
     //let mut screen: lvgl::Screen = display.get_scr_act().map_err(BoardError::DISPLAY)?;
@@ -157,8 +157,8 @@ fn main() -> Result<()> {
         lv_label_set_text(&mut label, text.as_c_str());
     });
 
-    world.spawn(label);
-    world.spawn(arc);
+    /*world.spawn(label);
+    world.spawn(arc);*/
 
     info!("Widgets OK");
 

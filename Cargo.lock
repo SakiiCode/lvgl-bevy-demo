@@ -1249,9 +1249,7 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "lv_bevy_ecs"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bea060f846366b5f632e3835bb44575c0279352e743119c6e5eeff5a29c4336c"
+version = "0.6.0"
 dependencies = [
  "bevy_ecs",
  "ctor",
@@ -1266,8 +1264,6 @@ dependencies = [
 [[package]]
 name = "lv_codegen"
 version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d3472821d708436b9b83bd4dd0c40a1ffce4afc57dee9de0ba0a14649080438"
 dependencies = [
  "Inflector",
  "itertools 0.14.0",

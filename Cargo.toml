@@ -31,7 +31,8 @@ experimental = ["esp-idf-svc/experimental"]
 log = "0.4"
 esp-idf-svc = "0.51"
 embedded-graphics = "0.8.1"
-lv_bevy_ecs = { version = "0.5" }
+lv_bevy_ecs = { path="../lv_bevy_ecs", version = "0.6", features = ["no_ecs", "lvgl-alloc"]}#}
+#lv_bevy_ecs = { version = "0.5" }
 mipidsi = "0.9.0"
 static_cell = "2.1.0"
 xpt2046 = { git = "https://github.com/nullstalgia/mff-hr-v1.git", rev = "380384f0d44fa620bf083f2f751ea013fa8887db"}

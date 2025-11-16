@@ -1,4 +1,11 @@
-use std::{ffi::CString, time::Instant};
+use std::{
+    ffi::CString,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        RwLock,
+    },
+    time::Instant,
+};
 
 use anyhow::Result;
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Point};
@@ -22,10 +29,19 @@ use lv_bevy_ecs::{
     widgets::{Arc, Label},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
-use static_cell::StaticCell;
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
-static SCREEN_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
+//static SCREEN_BUFFER: StaticCell<[u8; 320]> = StaticCell::new();
+
+#[allow(non_upper_case_globals)]
+static is_pointer_down_ref: AtomicBool = AtomicBool::new(false);
+
+#[allow(non_upper_case_globals)]
+static latest_touch_status_ref: RwLock<InputEvent<Pointer>> = RwLock::new(InputEvent {
+    status: BufferStatus::Once,
+    state: InputState::Released,
+    data: Point { x: 0, y: 0 },
+});
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -41,12 +57,16 @@ fn main() -> Result<()> {
     // Use LVGL logger instead
     //lv_log_init();
 
+    const HOR_RES: u32 = 320;
+    const VER_RES: u32 = 240;
+    const LINE_HEIGHT: u32 = VER_RES / 20;
+
     let mut delay: Delay = Default::default();
 
     let peripherals = Peripherals::take()?;
     let pins = peripherals.pins;
 
-    let buffer_ref = SCREEN_BUFFER.init([0u8; 256]);
+    let mut buffer_ref = [0u8; 320]; //SCREEN_BUFFER.init([0u8; 320]);
     let di = SpiInterface::new(
         SpiDeviceDriver::new_single(
             peripherals.spi2,
@@ -54,11 +74,11 @@ fn main() -> Result<()> {
             pins.gpio13,
             Some(pins.gpio12),
             Some(pins.gpio15),
-            &DriverConfig::default().dma(Dma::Auto(320 * 240 * 2)),
+            &DriverConfig::default().dma(Dma::Auto(buffer_ref.len())),
             &Config::default().baudrate(MegaHertz(40).into()),
         )?,
         PinDriver::output(pins.gpio2)?,
-        buffer_ref,
+        &mut buffer_ref,
     );
 
     let mut tft_display = Builder::new(ST7789, di)
@@ -90,10 +110,6 @@ fn main() -> Result<()> {
     //===========================================================================================================
     //                               Create the User Interface
     //===========================================================================================================
-
-    const HOR_RES: u32 = 320;
-    const VER_RES: u32 = 240;
-    const LINE_HEIGHT: u32 = VER_RES / 20;
 
     // Pin 21, Backlight
     let mut bl = PinDriver::output(pins.gpio21)?;
@@ -164,12 +180,18 @@ fn main() -> Result<()> {
 
     //let mut latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
 
+    /*latest_touch_status_ref.replace(InputEvent::<Pointer> {
+        status: BufferStatus::Once,
+        state: InputState::Released,
+        data: Point::new(0, 0),
+    });*/
+
     let _pointer = InputDevice::<Pointer>::create(|| match touch.get_touch_event() {
-        Ok(event) => unsafe { read_touch_input(event) },
-        Err(error) => unsafe {
+        Ok(event) => read_touch_input(event),
+        Err(error) => {
             dbg!(error);
             read_touch_input(None)
-        },
+        }
     });
 
     info!("Pointer OK");
@@ -192,52 +214,56 @@ fn main() -> Result<()> {
 }
 
 #[allow(non_upper_case_globals)]
-unsafe fn read_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
-    static mut is_pointer_down: bool = false;
-    static mut latest_touch_status: InputEvent<Pointer> = InputEvent::<Pointer> {
-        status: BufferStatus::Once,
-        state: InputState::Released,
-        data: Point::new(0, 0),
-    };
-
+fn read_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
     let event = match event {
         Some(event) => event,
         None => {
-            return latest_touch_status;
+            let lock = latest_touch_status_ref.read().unwrap();
+            return lock.clone();
         }
     };
+
+    let mut next_touch_status = None;
 
     //dbg!(&event.point);
     #[allow(unused_assignments)]
     match event.kind {
         TouchKind::Start => {
             //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
-            latest_touch_status = InputEvent {
+            next_touch_status = Some(InputEvent {
                 status: BufferStatus::Once,
                 state: InputState::Pressed,
                 data: event.point,
-            };
-            is_pointer_down = true;
+            });
+            is_pointer_down_ref.store(true, Ordering::Relaxed);
         }
         TouchKind::Move => {
-            if is_pointer_down {
+            if is_pointer_down_ref.load(Ordering::Relaxed) {
                 //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
-                latest_touch_status = InputEvent {
+                next_touch_status = Some(InputEvent {
                     status: BufferStatus::Once,
                     state: InputState::Pressed,
                     data: event.point,
-                };
+                });
             }
         }
         TouchKind::End => {
             //latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
-            latest_touch_status = InputEvent {
+            next_touch_status = Some(InputEvent {
                 status: BufferStatus::Once,
                 state: InputState::Released,
                 data: Point::new(0, 0),
-            };
-            is_pointer_down = false;
+            });
+            is_pointer_down_ref.store(false, Ordering::Relaxed);
         }
     }
-    latest_touch_status
+    if let Some(latest_touch_status) = next_touch_status {
+        //latest_touch_status_ref.replace(latest_touch_status);
+        let mut lock = latest_touch_status_ref.write().unwrap();
+        *lock = latest_touch_status;
+        return latest_touch_status;
+    }
+
+    let lock = latest_touch_status_ref.read().unwrap();
+    return lock.clone();
 }

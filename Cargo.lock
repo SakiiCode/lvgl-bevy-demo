@@ -749,7 +749,7 @@ dependencies = [
  "strum 0.24.1",
  "tempfile",
  "thiserror 1.0.69",
- "which",
+ "which 4.4.2",
 ]
 
 [[package]]
@@ -772,6 +772,12 @@ dependencies = [
  "quote",
  "syn 2.0.106",
 ]
+
+[[package]]
+name = "env_home"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7f84e12ccf0a7ddc17a6c41c93326024c42920d7ee630d04950e6926645c0fe"
 
 [[package]]
 name = "envy"
@@ -858,7 +864,7 @@ dependencies = [
  "regex",
  "serde",
  "strum 0.24.1",
- "which",
+ "which 4.4.2",
 ]
 
 [[package]]
@@ -1212,12 +1218,11 @@ dependencies = [
 
 [[package]]
 name = "lightvgl-sys"
-version = "9.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb056d359c8310c24fe86b16c2db53f133c8790e88b2dfef73e29b01692d008e"
+version = "9.4.2"
 dependencies = [
  "bindgen 0.72.1",
  "cc",
+ "string-literals",
 ]
 
 [[package]]
@@ -1259,6 +1264,7 @@ dependencies = [
  "lv_codegen",
  "proc-macro2",
  "quote",
+ "which 8.0.0",
 ]
 
 [[package]]
@@ -1752,6 +1758,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "string-literals"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "139247bfd1965ad72162877fbbc1f5410b6fda94c65e5fa91b59b58c56444398"
+
+[[package]]
 name = "strum"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2044,6 +2056,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "which"
+version = "8.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fabb953106c3c8eea8306e4393700d7657561cb43122571b172bbfb7c7ba1d"
+dependencies = [
+ "env_home",
+ "rustix 1.1.2",
+ "winsafe",
+]
+
+[[package]]
 name = "winapi-util"
 version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2284,6 +2307,12 @@ checksum = "21a0236b59786fed61e2a80582dd500fe61f18b5dca67a4a067d0bc9039339cf"
 dependencies = [
  "memchr",
 ]
+
+[[package]]
+name = "winsafe"
+version = "0.0.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d135d17ab770252ad95e9a872d365cf3090e3be864a34ab46f48555993efc904"
 
 [[package]]
 name = "wit-bindgen"

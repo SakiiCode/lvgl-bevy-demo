@@ -4,13 +4,12 @@ use std::{
         atomic::{AtomicBool, Ordering},
         RwLock,
     },
-    time::Instant,
 };
 
 use anyhow::Result;
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Point};
 use esp_idf_svc::hal::{
-    delay::{Delay, FreeRtos},
+    delay::Delay,
     gpio::PinDriver,
     prelude::Peripherals,
     spi::{
@@ -19,6 +18,7 @@ use esp_idf_svc::hal::{
     },
     units::MegaHertz,
 };
+use esp_idf_svc::sys::xTaskGetTickCount;
 use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
@@ -26,6 +26,7 @@ use lv_bevy_ecs::{
     functions::*,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     support::{Align, LabelLongMode},
+    sys::lv_tick_set_cb,
     widgets::{Arc, Label},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
@@ -184,20 +185,18 @@ fn main() -> Result<()> {
 
     info!("Pointer OK");
 
-    let mut prev_time = Instant::now();
-
-    FreeRtos::delay_ms(10);
-    info!("Sleep OK");
+    unsafe {
+        lv_tick_set_cb(Some(xTaskGetTickCount));
+    }
+    let mut tick = unsafe { xTaskGetTickCount() };
 
     loop {
-        let current_time = Instant::now();
-        let diff = current_time.duration_since(prev_time);
-        prev_time = current_time;
-
-        lv_tick_inc(diff);
-        lv_timer_handler();
-
-        FreeRtos::delay_ms(10);
+        unsafe {
+            let delay = lv_timer_handler();
+            if delay > 0 {
+                esp_idf_svc::sys::xTaskDelayUntil(&mut tick, delay);
+            }
+        }
     }
 }
 

@@ -2,7 +2,7 @@ use std::{
     ffi::CString,
     sync::{
         atomic::{AtomicBool, Ordering},
-        RwLock,
+        Mutex,
     },
 };
 
@@ -34,8 +34,7 @@ use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
 static IS_POINTER_DOWN: AtomicBool = AtomicBool::new(false);
 
-static LATEST_TOUCH_STATUS: RwLock<InputEvent<Pointer>> =
-    RwLock::new(InputEvent::default_const(Point::zero()));
+static LATEST_TOUCH_STATUS: Mutex<InputEvent<Pointer>> = Mutex::new(InputEvent::new(Point::zero()));
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -179,7 +178,7 @@ fn main() -> Result<()> {
                 dbg!(error);
             }
         }
-        let lock = LATEST_TOUCH_STATUS.read().unwrap();
+        let lock = LATEST_TOUCH_STATUS.lock().unwrap();
         return *lock;
     });
 
@@ -210,10 +209,10 @@ fn update_touch_input(event: &TouchEvent) {
                 state: InputState::Pressed,
                 data: event.point,
             });
-            IS_POINTER_DOWN.store(true, Ordering::Release);
+            IS_POINTER_DOWN.store(true, Ordering::Relaxed);
         }
         TouchKind::Move => {
-            if IS_POINTER_DOWN.load(Ordering::Acquire) {
+            if IS_POINTER_DOWN.load(Ordering::Relaxed) {
                 next_touch_status = Some(InputEvent {
                     status: BufferStatus::Once,
                     state: InputState::Pressed,
@@ -227,11 +226,11 @@ fn update_touch_input(event: &TouchEvent) {
                 state: InputState::Released,
                 data: Point::new(0, 0),
             });
-            IS_POINTER_DOWN.store(false, Ordering::Release);
+            IS_POINTER_DOWN.store(false, Ordering::Relaxed);
         }
     }
     if let Some(latest_touch_status) = next_touch_status {
-        let mut lock = LATEST_TOUCH_STATUS.write().unwrap();
+        let mut lock = LATEST_TOUCH_STATUS.lock().unwrap();
         *lock = latest_touch_status;
     }
 }

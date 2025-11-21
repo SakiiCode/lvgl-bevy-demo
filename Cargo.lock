@@ -1249,9 +1249,9 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "lv_bevy_ecs"
-version = "0.5.0"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bea060f846366b5f632e3835bb44575c0279352e743119c6e5eeff5a29c4336c"
+checksum = "3752b2b88911e24bbe67cde26f7cbb5508bfe73cbc9b8b82f1116b06c51f7b41"
 dependencies = [
  "bevy_ecs",
  "ctor",

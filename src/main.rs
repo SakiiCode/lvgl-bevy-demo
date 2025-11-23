@@ -22,6 +22,7 @@ use esp_idf_svc::sys::xTaskGetTickCount;
 use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
+    error,
     events::Event,
     functions::*,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
@@ -31,10 +32,6 @@ use lv_bevy_ecs::{
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
-
-static IS_POINTER_DOWN: AtomicBool = AtomicBool::new(false);
-
-static LATEST_TOUCH_STATUS: Mutex<InputEvent<Pointer>> = Mutex::new(InputEvent::new(Point::zero()));
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -172,14 +169,11 @@ fn main() -> Result<()> {
     info!("Widgets OK");
 
     let _pointer = InputDevice::<Pointer>::create(|| {
-        match touch.get_touch_event() {
-            Ok(event) => event.iter().for_each(update_touch_input),
-            Err(error) => {
-                dbg!(error);
-            }
+        let event = touch.get_touch_event();
+        if let Err(error) = event {
+            error!("{}", error)
         }
-        let lock = LATEST_TOUCH_STATUS.lock().unwrap();
-        return *lock;
+        get_touch_input(event.ok().flatten())
     });
 
     info!("Pointer OK");
@@ -199,7 +193,15 @@ fn main() -> Result<()> {
     }
 }
 
-fn update_touch_input(event: &TouchEvent) {
+fn get_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
+    static IS_POINTER_DOWN: AtomicBool = AtomicBool::new(false);
+    static LATEST_TOUCH_STATUS: Mutex<InputEvent<Pointer>> =
+        Mutex::new(InputEvent::new(Point::zero()));
+
+    let Some(event) = event else {
+        return *LATEST_TOUCH_STATUS.lock().unwrap();
+    };
+
     let mut next_touch_status = None;
 
     match event.kind {
@@ -229,8 +231,10 @@ fn update_touch_input(event: &TouchEvent) {
             IS_POINTER_DOWN.store(false, Ordering::Relaxed);
         }
     }
+    let mut lock = LATEST_TOUCH_STATUS.lock().unwrap();
+
     if let Some(latest_touch_status) = next_touch_status {
-        let mut lock = LATEST_TOUCH_STATUS.lock().unwrap();
         *lock = latest_touch_status;
     }
+    return *lock;
 }

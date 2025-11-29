@@ -1,9 +1,15 @@
-use std::{ffi::CString, time::Instant};
+use std::{
+    ffi::CString,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Mutex,
+    },
+};
 
 use anyhow::Result;
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Point};
 use esp_idf_svc::hal::{
-    delay::{Delay, FreeRtos},
+    delay::Delay,
     gpio::PinDriver,
     prelude::Peripherals,
     spi::{
@@ -12,20 +18,20 @@ use esp_idf_svc::hal::{
     },
     units::MegaHertz,
 };
+use esp_idf_svc::sys::xTaskGetTickCount;
 use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
+    error,
     events::Event,
     functions::*,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     support::{Align, LabelLongMode},
-    widgets::{Arc, Label, LvglWorld},
+    sys::lv_tick_set_cb,
+    widgets::{Arc, Label},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
-use static_cell::StaticCell;
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
-
-static SCREEN_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -41,12 +47,16 @@ fn main() -> Result<()> {
     // Use LVGL logger instead
     //lv_log_init();
 
+    const HOR_RES: u32 = 320;
+    const VER_RES: u32 = 240;
+    const LINE_HEIGHT: u32 = VER_RES / 20;
+
     let mut delay: Delay = Default::default();
 
     let peripherals = Peripherals::take()?;
     let pins = peripherals.pins;
 
-    let buffer_ref = SCREEN_BUFFER.init([0u8; 256]);
+    let mut buffer_ref = [0u8; 320]; //SCREEN_BUFFER.init([0u8; 320]);
     let di = SpiInterface::new(
         SpiDeviceDriver::new_single(
             peripherals.spi2,
@@ -54,11 +64,11 @@ fn main() -> Result<()> {
             pins.gpio13,
             Some(pins.gpio12),
             Some(pins.gpio15),
-            &DriverConfig::default().dma(Dma::Auto(320 * 240 * 2)),
+            &DriverConfig::default().dma(Dma::Auto(buffer_ref.len())),
             &Config::default().baudrate(MegaHertz(40).into()),
         )?,
         PinDriver::output(pins.gpio2)?,
-        buffer_ref,
+        &mut buffer_ref,
     );
 
     let mut tft_display = Builder::new(ST7789, di)
@@ -91,10 +101,6 @@ fn main() -> Result<()> {
     //                               Create the User Interface
     //===========================================================================================================
 
-    const HOR_RES: u32 = 320;
-    const VER_RES: u32 = 240;
-    const LINE_HEIGHT: u32 = 240;
-
     // Pin 21, Backlight
     let mut bl = PinDriver::output(pins.gpio21)?;
     // Turn on backlight
@@ -123,10 +129,10 @@ fn main() -> Result<()> {
 
     info!("Draw Buffer OK");
 
-    let mut world = LvglWorld::new();
+    //let mut world = LvglWorld::default();
     //world.add_observer(on_insert_children);
 
-    info!("World OK");
+    //info!("World OK");
 
     // Create screen and widgets
     //let mut screen: lvgl::Screen = display.get_scr_act().map_err(BoardError::DISPLAY)?;
@@ -157,87 +163,78 @@ fn main() -> Result<()> {
         lv_label_set_text(&mut label, text.as_c_str());
     });
 
-    world.spawn(label);
-    world.spawn(arc);
+    /*world.spawn(label);
+    world.spawn(arc);*/
 
     info!("Widgets OK");
 
-    //let mut latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
-
-    let _pointer = InputDevice::<Pointer>::create(|| match touch.get_touch_event() {
-        Ok(event) => unsafe { read_touch_input(event) },
-        Err(error) => unsafe {
-            dbg!(error);
-            read_touch_input(None)
-        },
+    let _pointer = InputDevice::<Pointer>::create(|| {
+        let event = touch.get_touch_event();
+        if let Err(error) = event {
+            error!("{}", error)
+        }
+        get_touch_input(event.ok().flatten())
     });
 
     info!("Pointer OK");
 
-    let mut prev_time = Instant::now();
-
-    FreeRtos::delay_ms(10);
-    info!("Sleep OK");
+    unsafe {
+        lv_tick_set_cb(Some(xTaskGetTickCount));
+    }
+    let mut tick = unsafe { xTaskGetTickCount() };
 
     loop {
-        let current_time = Instant::now();
-        let diff = current_time.duration_since(prev_time);
-        prev_time = current_time;
-
-        lv_tick_inc(diff);
-        lv_timer_handler();
-
-        FreeRtos::delay_ms(10);
+        unsafe {
+            let delay = lv_timer_handler();
+            if delay > 0 {
+                esp_idf_svc::sys::xTaskDelayUntil(&mut tick, delay);
+            }
+        }
     }
 }
 
-#[allow(non_upper_case_globals)]
-unsafe fn read_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
-    static mut is_pointer_down: bool = false;
-    static mut latest_touch_status: InputEvent<Pointer> = InputEvent::<Pointer> {
-        status: BufferStatus::Once,
-        state: InputState::Released,
-        data: Point::new(0, 0),
+fn get_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
+    static IS_POINTER_DOWN: AtomicBool = AtomicBool::new(false);
+    static LATEST_TOUCH_STATUS: Mutex<InputEvent<Pointer>> =
+        Mutex::new(InputEvent::new(Point::zero()));
+
+    let Some(event) = event else {
+        return *LATEST_TOUCH_STATUS.lock().unwrap();
     };
 
-    let event = match event {
-        Some(event) => event,
-        None => {
-            return latest_touch_status;
-        }
-    };
+    let mut next_touch_status = None;
 
-    //dbg!(&event.point);
-    #[allow(unused_assignments)]
     match event.kind {
         TouchKind::Start => {
-            //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
-            latest_touch_status = InputEvent {
+            next_touch_status = Some(InputEvent {
                 status: BufferStatus::Once,
                 state: InputState::Pressed,
                 data: event.point,
-            };
-            is_pointer_down = true;
+            });
+            IS_POINTER_DOWN.store(true, Ordering::Relaxed);
         }
         TouchKind::Move => {
-            if is_pointer_down {
-                //latest_touch_status = PointerInputData::Touch(event.point).pressed().once();
-                latest_touch_status = InputEvent {
+            if IS_POINTER_DOWN.load(Ordering::Relaxed) {
+                next_touch_status = Some(InputEvent {
                     status: BufferStatus::Once,
                     state: InputState::Pressed,
                     data: event.point,
-                };
+                });
             }
         }
         TouchKind::End => {
-            //latest_touch_status = PointerInputData::Touch(Point::new(0, 0)).released().once();
-            latest_touch_status = InputEvent {
+            next_touch_status = Some(InputEvent {
                 status: BufferStatus::Once,
                 state: InputState::Released,
                 data: Point::new(0, 0),
-            };
-            is_pointer_down = false;
+            });
+            IS_POINTER_DOWN.store(false, Ordering::Relaxed);
         }
     }
-    latest_touch_status
+    let mut lock = LATEST_TOUCH_STATUS.lock().unwrap();
+
+    if let Some(latest_touch_status) = next_touch_status {
+        *lock = latest_touch_status;
+    }
+    return *lock;
 }

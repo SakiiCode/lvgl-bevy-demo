@@ -130,7 +130,7 @@ dependencies = [
  "bevy_macro_utils",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -142,7 +142,7 @@ dependencies = [
  "parking_lot",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
  "toml_edit",
 ]
 
@@ -211,7 +211,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -231,7 +231,7 @@ dependencies = [
  "regex",
  "rustc-hash",
  "shlex",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -266,7 +266,7 @@ dependencies = [
  "once_cell",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -502,7 +502,7 @@ dependencies = [
  "ident_case",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -513,7 +513,7 @@ checksum = "d38308df82d1080de0afee5d069fa14b0326a88c14f15c5ccda35b4a6c414c81"
 dependencies = [
  "darling_core",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -545,7 +545,7 @@ dependencies = [
  "proc-macro-error2",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -574,7 +574,7 @@ checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
  "unicode-xid",
 ]
 
@@ -776,7 +776,7 @@ dependencies = [
  "darling",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -807,7 +807,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1225,6 +1225,8 @@ dependencies = [
 [[package]]
 name = "lightvgl-sys"
 version = "9.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e71cba614ba870ccf98c6eb9dc7baaff1c0683342a1a0bb1752bc6d864c8ed34"
 dependencies = [
  "bindgen 0.72.1",
  "cc",
@@ -1260,7 +1262,9 @@ checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
 
 [[package]]
 name = "lv_bevy_ecs"
-version = "0.6.0"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4be71aef7b51dc34b8d924c5b4e93d6ba86ee359f9dd47884d9fa408c9f8586"
 dependencies = [
  "bevy_ecs",
  "constptr",
@@ -1276,7 +1280,9 @@ dependencies = [
 
 [[package]]
 name = "lv_codegen"
-version = "0.2.3"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e40d930c689e8f9b7f8fd2b6e67992174bbb2556bcd62bc80e2cb45732a76e0"
 dependencies = [
  "Inflector",
  "constptr",
@@ -1284,7 +1290,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "syn 2.0.106",
+ "syn 2.0.111",
  "thiserror 2.0.17",
 ]
 
@@ -1413,7 +1419,7 @@ dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1462,7 +1468,7 @@ checksum = "6e918e4ff8c4549eb882f14b3a4bc8c8bc93de829416eacf579f1207a8fbf861"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1499,7 +1505,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "479ca8adacdd7ce8f1fb39ce9ecccbfe93a3f1344b3d0d97f20bc0196208f62b"
 dependencies = [
  "proc-macro2",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1530,7 +1536,7 @@ dependencies = [
  "proc-macro-error-attr2",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1638,7 +1644,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.11.0",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1705,7 +1711,7 @@ checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1813,7 +1819,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustversion",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1829,9 +1835,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.106"
+version = "2.0.111"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ede7c438028d4436d71104916910f5bb611972c5cfd7f89b8300a8186e6fada6"
+checksum = "390cc9a294ab71bdb1aa2e99d13be9c753cd2d7bd6560c77118597410c4d2e87"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1848,7 +1854,7 @@ dependencies = [
  "getrandom",
  "once_cell",
  "rustix 1.1.2",
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1877,7 +1883,7 @@ checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1888,7 +1894,7 @@ checksum = "3ff15c8ecd7de3849db632e14d18d2571fa09dfc5ed93479bc4485c7a517c913"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -1950,7 +1956,7 @@ checksum = "41b6d82be61465f97d42bd1d15bf20f3b0a3a0905018f38f9d6f6962055b0b5c"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -2016,7 +2022,7 @@ dependencies = [
  "log",
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
  "wasm-bindgen-shared",
 ]
 
@@ -2038,7 +2044,7 @@ checksum = "9f07d2f20d4da7b26400c9f4a0511e6e0345b040694e8a75bd41d578fa4421d7"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -2081,7 +2087,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.1",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -2105,7 +2111,7 @@ checksum = "edb307e42a74fb6de9bf3a02d9712678b22399c87e6fa869d6dfcd8c1b7754e0"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]
@@ -2116,7 +2122,7 @@ checksum = "c0abd1ddbc6964ac14db11c7213d6532ef34bd9aa042c2e5935f59d7908b46a5"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.106",
+ "syn 2.0.111",
 ]
 
 [[package]]

@@ -1,7 +1,6 @@
 [package]
 name = "lvgl-bevy-demo"
 version = "0.1.0"
-authors = ["s4k11"]
 edition = "2021"
 resolver = "2"
 rust-version = "1.77"
@@ -31,8 +30,8 @@ experimental = ["esp-idf-svc/experimental"]
 log = "0.4"
 esp-idf-svc = "0.51"
 embedded-graphics = "0.8.1"
-lv_bevy_ecs = { version = "0.6", features = ["no_ecs", "lvgl_alloc"] }
-mipidsi = "0.9.0"
+lv_bevy_ecs = { version = "0.8", features = ["no_ecs", "lvgl_alloc", "ctor"] }
+mipidsi = "0.10.0"
 static_cell = "2.1.0"
 xpt2046 = { git = "https://github.com/nullstalgia/mff-hr-v1.git", rev = "380384f0d44fa620bf083f2f751ea013fa8887db"}
 anyhow = "1.0.100"

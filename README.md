@@ -4,6 +4,8 @@ This is a demo project for [lv_bevy_ecs](https://github.com/SakiiCode/lv_bevy_ec
 
 Tested with ESP32 only.
 
+### Building
+
 You need four env variables in config.toml and the PATH applied from ~/export-esp.sh
 
 ```
@@ -16,6 +18,12 @@ BINDGEN_EXTRA_CLANG_ARGS = "--sysroot ..."
 `LIBCLANG_PATH` can be found in ~/export-esp.sh
 
 `BINDGEN_EXTRA_CLANG_ARGS` sysroot can be found with `xtensa-esp32-elf-ld --print-sysroot`
+
+### Flashing
+
+```sh
+cargo espflash flash --monitor
+```
 
 ### Partitions
 

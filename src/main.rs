@@ -24,14 +24,18 @@ use lv_bevy_ecs::{
     error,
     events::Event,
     functions::*,
-    info,warn,
+    info,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     support::{Align, LabelLongMode},
-    sys::lv_tick_set_cb,
+    sys::{lv_mem_monitor_t, lv_tick_set_cb},
+    warn,
     widgets::{Arc, Label},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
+
+#[no_mangle]
+pub fn get_memory_stats(_monitor: &mut lv_mem_monitor_t) {}
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime

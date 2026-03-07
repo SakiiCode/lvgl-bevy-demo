@@ -19,12 +19,12 @@ use esp_idf_svc::hal::{
     units::MegaHertz,
 };
 use esp_idf_svc::sys::xTaskGetTickCount;
-use log::info;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
     error,
     events::Event,
     functions::*,
+    info,warn,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     support::{Align, LabelLongMode},
     sys::lv_tick_set_cb,
@@ -155,7 +155,7 @@ fn main() -> Result<()> {
 
     lv_obj_add_event_cb(&mut arc, Event::ValueChanged, |mut event| {
         let Some(mut obj) = lv_event_get_target_obj(&mut event) else {
-            lv_bevy_ecs::warn!("Target obj was null");
+            warn!("Target obj was null");
             return;
         };
         let value = lv_arc_get_value(&mut obj);

@@ -12,7 +12,7 @@ name = "lvgl-bevy-demo"
 [dependencies]
 anyhow = "1.0.100"
 embedded-graphics = "0.8.1"
-esp-idf-svc = "0.51"
+esp-idf-svc = "0.52"
 log = "0.4"
 lv_bevy_ecs = { version = "0.9", features = ["ctor", "no_ecs", "rust-alloc"] }
 mipidsi = "0.10.0"

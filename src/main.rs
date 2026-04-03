@@ -11,7 +11,7 @@ use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Po
 use esp_idf_svc::hal::{
     delay::Delay,
     gpio::PinDriver,
-    prelude::Peripherals,
+    peripherals::Peripherals,
     spi::{
         config::{Config, DriverConfig},
         Dma, SpiDeviceDriver,

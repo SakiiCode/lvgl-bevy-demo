@@ -4,15 +4,23 @@ This is a demo project for [lv_bevy_ecs](https://github.com/SakiiCode/lv_bevy_ec
 
 Tested with ESP32 only.
 
+### Installing the toolchain
+
+```sh
+cargo install espup --locked
+espup install
+cargo install espflash cargo-espflash ldproxy
+```
+
 ### Building
 
-You need four env variables in config.toml and the PATH applied from ~/export-esp.sh
+You need additional env variables in `.cargo/config-local.toml` and the PATH applied from ~/export-esp.sh
 
-```
-DEP_LV_CONFIG_PATH = { relative = true, value = "." }
-LIBCLANG_PATH = "..."
-CROSS_COMPILE = "xtensa-esp32-elf"
-BINDGEN_EXTRA_CLANG_ARGS = "--sysroot ..."
+```toml
+[env]
+LIBCLANG_PATH = '...'
+BINDGEN_EXTRA_CLANG_ARGS = '--sysroot ...'
+LV_COMPILE_ARGS='-I%USERPROFILE%\.rustup\toolchains\esp\xtensa-esp-elf\xtensa-esp-elf\include' # Windows only
 ```
 
 `LIBCLANG_PATH` can be found in ~/export-esp.sh

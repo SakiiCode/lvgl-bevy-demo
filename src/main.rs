@@ -1,7 +1,7 @@
 use std::{
     ffi::CString,
     sync::{
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU32, Ordering},
         Mutex,
     },
 };
@@ -26,6 +26,7 @@ use lv_bevy_ecs::{
     functions::*,
     info,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
+    malloc::provide_mem_monitor_impl,
     support::{Align, LabelLongMode},
     sys::{lv_mem_monitor_t, lv_tick_set_cb},
     warn,
@@ -34,8 +35,34 @@ use lv_bevy_ecs::{
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
-#[no_mangle]
-pub fn get_memory_stats(_monitor: &mut lv_mem_monitor_t) {}
+pub fn get_memory_stats(monitor: &mut lv_mem_monitor_t) {
+    unsafe {
+        use esp_idf_svc::sys as esp_idf_sys;
+        use esp_idf_sys::MALLOC_CAP_DEFAULT;
+
+        static MAX_USED: AtomicU32 = AtomicU32::new(0);
+
+        let total = esp_idf_sys::heap_caps_get_total_size(MALLOC_CAP_DEFAULT);
+        monitor.total_size = total;
+
+        let free = esp_idf_sys::heap_caps_get_free_size(MALLOC_CAP_DEFAULT);
+        monitor.free_size = free;
+
+        let largest_free = esp_idf_sys::heap_caps_get_largest_free_block(MALLOC_CAP_DEFAULT);
+        monitor.free_biggest_size = largest_free;
+
+        let used = total - free;
+        //MAX_USED.fetch_max(used as u32, Ordering::Relaxed);
+        let new_max = u32::max(MAX_USED.load(Ordering::Relaxed), used as u32);
+        MAX_USED.store(new_max, Ordering::Relaxed);
+        monitor.max_used = new_max as usize;
+
+        let used_pct = (used) * 100 / total;
+        monitor.used_pct = used_pct as u8;
+        let frag_pct = (total - largest_free) * 100 / total;
+        monitor.frag_pct = frag_pct as u8;
+    }
+}
 
 fn main() -> Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -50,6 +77,8 @@ fn main() -> Result<()> {
 
     // Use LVGL logger instead
     //lv_log_init();
+
+    provide_mem_monitor_impl(get_memory_stats);
 
     const HOR_RES: u32 = 320;
     const VER_RES: u32 = 240;

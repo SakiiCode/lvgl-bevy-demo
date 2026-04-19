@@ -14,7 +14,11 @@ anyhow = "1.0.100"
 embedded-graphics = "0.8.1"
 esp-idf-svc = "0.52"
 log = "0.4"
-lv_bevy_ecs = { version = "0.9", features = ["ctor", "no_ecs", "rust-alloc"] }
+lv_bevy_ecs = { version = "0.10.0-alpha", features = [
+  "ctor",
+  "no_ecs",
+  "rust-alloc"
+] }
 mipidsi = "0.10.0"
 static_cell = "2.1.0"
 xpt2046 = { git = "https://github.com/nullstalgia/mff-hr-v1.git", rev = "380384f0d44fa620bf083f2f751ea013fa8887db" }

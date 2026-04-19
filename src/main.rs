@@ -22,15 +22,15 @@ use esp_idf_svc::sys::xTaskGetTickCount;
 use lv_bevy_ecs::{
     display::{Display, DrawBuffer},
     error,
-    events::Event,
+    events::EventCode,
     functions::*,
     info,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     malloc::provide_mem_monitor_impl,
     support::{Align, LabelLongMode},
-    sys::{lv_mem_monitor_t, lv_tick_set_cb},
+    sys::{lv_mem_monitor_t, lv_tick_set_cb, LV_DEF_REFR_PERIOD},
     warn,
-    widgets::{Arc, Label},
+    widgets::{Arc, Label, Wdg},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
@@ -174,26 +174,26 @@ fn main() -> Result<()> {
     // screen_style.set_bg_color(Color::from_rgb((100, 100, 100)));
     // screen.add_style(Part::Main, &mut screen_style);
 
-    let mut arc = Arc::create_widget();
-    lv_obj_set_size(&mut arc, 150, 150);
-    lv_arc_set_rotation(&mut arc, 135);
-    lv_arc_set_bg_angles(&mut arc, 0, 270);
-    lv_arc_set_value(&mut arc, 10);
-    lv_obj_set_align(&mut arc, Align::Center.into());
+    let mut arc = Arc::new();
+    arc.set_size(150, 150);
+    arc.set_rotation(135);
+    arc.set_bg_angles(0, 270);
+    arc.set_value(10);
+    arc.set_align(Align::Center.into());
 
-    let mut label = Label::create_widget();
-    lv_label_set_long_mode(&mut label, LabelLongMode::Clip.into());
-    lv_label_set_text_static(&mut label, c"asdasdasd");
-    lv_obj_set_align(&mut label, Align::TopMid.into());
+    let mut label = Label::new();
+    label.set_long_mode(LabelLongMode::Clip.into());
+    label.set_text_static(c"asdasdasd");
+    label.set_align(Align::TopMid.into());
 
-    lv_obj_add_event_cb(&mut arc, Event::ValueChanged, |mut event| {
-        let Some(mut obj) = lv_event_get_target_obj(&mut event) else {
+    arc.add_event_cb(EventCode::ValueChanged, |mut event| {
+        let Some(obj) = event.get_target_obj() else {
             warn!("Target obj was null");
             return;
         };
-        let value = lv_arc_get_value(&mut obj);
+        let value = obj.downcast::<Arc<Wdg>>().unwrap().get_value();
         let text = CString::new(value.to_string()).unwrap();
-        lv_label_set_text(&mut label, text.as_c_str());
+        label.set_text(text.as_c_str());
     });
 
     /*world.spawn(label);
@@ -219,8 +219,16 @@ fn main() -> Result<()> {
     loop {
         unsafe {
             let delay = lv_timer_handler();
-            if delay > 0 {
-                esp_idf_svc::sys::xTaskDelayUntil(&mut tick, delay);
+            match delay {
+                NextTimerPeriod::Ready => {
+                    continue;
+                }
+                NextTimerPeriod::AfterMs(delay) => {
+                    esp_idf_svc::sys::xTaskDelayUntil(&mut tick, delay.get());
+                }
+                NextTimerPeriod::Never => {
+                    esp_idf_svc::sys::vTaskDelay(LV_DEF_REFR_PERIOD);
+                }
             }
         }
     }

@@ -20,12 +20,12 @@ use esp_idf_svc::hal::{
 };
 use esp_idf_svc::sys::xTaskGetTickCount;
 use lv_bevy_ecs::{
-    display::{Display, DrawBuffer},
+    display::{Display, DrawBuf},
     error,
     events::EventCode,
     functions::*,
     info,
-    input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
+    input::{BufferStatus, Indev, InputEvent, InputState, Pointer},
     malloc::provide_mem_monitor_impl,
     support::{Align, LabelLongMode},
     sys::{lv_mem_monitor_t, lv_tick_set_cb, LV_DEF_REFR_PERIOD},
@@ -147,9 +147,8 @@ fn main() -> Result<()> {
         dbg!(&output);
     }
 
-    let mut display = Display::create(HOR_RES as i32, VER_RES as i32);
-    let buffer =
-        DrawBuffer::<{ (HOR_RES * LINE_HEIGHT) as usize }, Rgb565>::create(HOR_RES, LINE_HEIGHT);
+    let mut display = Display::new(HOR_RES as i32, VER_RES as i32);
+    let buffer = DrawBuf::<{ (HOR_RES * LINE_HEIGHT) as usize }, Rgb565>::new(HOR_RES, LINE_HEIGHT);
     info!("Display OK");
     display.register(buffer, |refresh| {
         let area = refresh.rectangle;
@@ -201,7 +200,7 @@ fn main() -> Result<()> {
 
     info!("Widgets OK");
 
-    let _pointer = InputDevice::<Pointer>::create(|| {
+    let _pointer = Indev::<Pointer>::new(|| {
         let event = touch.get_touch_event();
         if let Err(error) = event {
             error!("{}", error)
@@ -217,19 +216,17 @@ fn main() -> Result<()> {
     let mut tick = unsafe { xTaskGetTickCount() };
 
     loop {
-        unsafe {
-            let delay = lv_timer_handler();
-            match delay {
-                NextTimerPeriod::Ready => {
-                    continue;
-                }
-                NextTimerPeriod::AfterMs(delay) => {
-                    esp_idf_svc::sys::xTaskDelayUntil(&mut tick, delay.get());
-                }
-                NextTimerPeriod::Never => {
-                    esp_idf_svc::sys::vTaskDelay(LV_DEF_REFR_PERIOD);
-                }
+        let delay = lv_timer_handler();
+        match delay {
+            NextTimerPeriod::Ready => {
+                continue;
             }
+            NextTimerPeriod::AfterMs(delay) => unsafe {
+                esp_idf_svc::sys::xTaskDelayUntil(&mut tick, delay.get());
+            },
+            NextTimerPeriod::Never => unsafe {
+                esp_idf_svc::sys::vTaskDelay(LV_DEF_REFR_PERIOD);
+            },
         }
     }
 }

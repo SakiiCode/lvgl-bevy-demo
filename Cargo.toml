@@ -9,59 +9,44 @@ name = "lvgl-bevy-demo-nostd"
 path = "./src/bin/main.rs"
 
 [dependencies]
+anyhow = { version = "1.0.100", default-features = false }
 critical-section = "1.2.0"
 defmt = "1.0.1"
-defmt-serial = { path = "../defmt-serial", version = "0.12.0", features = [
+defmt-serial = { git = "https://github.com/SakiiCode/defmt-serial.git", branch = "fix-refs", features = [
   "espflash"
 ] }
-embassy-executor = { version = "0.9.1", features = ["defmt"] }
-embassy-net = { version = "0.7.1", features = [
-  "defmt",
-  "dhcpv4",
-  "medium-ethernet",
-  "tcp",
-  "udp",
-] }
+embassy-executor = { version = "0.10.0", features = ["defmt"] }
 embassy-time = { version = "0.5.0", features = ["defmt"] }
-embedded-io = { version = "0.7.1", features = ["defmt"] }
-embedded-io-async = { version = "0.7.0", features = ["defmt"] }
-esp-alloc = { version = "0.9.0", features = ["defmt"] }
-esp-backtrace = { version = "0.18.1", features = [
+embedded-graphics = "0.8.1"
+embedded-hal-bus = "0.3.0"
+embedded-io = { version = "0.7.1", features = ["alloc", "defmt"] }
+embedded-io-async = { version = "0.7.0", features = ["alloc", "defmt"] }
+esp-alloc = { version = "0.10.0", default-features = false, features = [
+  "defmt",
+  "esp32",
+  "global-allocator"
+] }
+esp-backtrace = { version = "0.19.0", features = [
   "defmt",
   "esp32",
   "panic-handler",
 ] }
-esp-bootloader-esp-idf = { version = "0.4.0", features = ["defmt", "esp32"] }
-esp-hal = { version = "~1.0", features = ["defmt", "esp32", "unstable"] }
-esp-println = { version = "0.16.1", features = ["defmt-espflash", "esp32"] }
-esp-radio = { version = "0.17.0", features = [
-  "defmt",
-  "esp-alloc",
-  "esp32",
-  "smoltcp",
-  "unstable",
-  "wifi",
-] }
-esp-rtos = { version = "0.2.0", features = [
+esp-bootloader-esp-idf = { version = "0.5.0", features = ["defmt", "esp32"] }
+esp-hal = { version = "~1.1", features = ["defmt", "esp32", "unstable"] }
+esp-rtos = { version = "0.3.0", features = [
   "embassy",
   "esp-alloc",
-  "esp-radio",
   "esp32",
 ] }
-smoltcp = { version = "0.12.0", default-features = false, features = [
+lv_bevy_ecs = { version = "0.10.0-alpha", features = [
+  "critical-section",
   "defmt",
-  "medium-ethernet",
-  "multicast",
-  "proto-dhcpv4",
-  "proto-dns",
-  "proto-ipv4",
-  "socket-dns",
-  "socket-icmp",
-  "socket-raw",
-  "socket-tcp",
-  "socket-udp",
+  "no_ecs",
+  "rust-alloc"
 ] }
+mipidsi = "0.10.0"
 static_cell = "2.1.1"
+xpt2046 = { git = "https://github.com/nullstalgia/mff-hr-v1.git", rev = "380384f0d44fa620bf083f2f751ea013fa8887db" }
 
 [profile.dev]
 # Rust debug is too slow.

@@ -1,7 +1,7 @@
 use lv_bevy_ecs::sys::lv_mem_monitor_t;
 use static_cell::StaticCell;
 
-const BSS_HEAP_SIZE: usize = 60 * 1024;
+const BSS_HEAP_SIZE: usize = 160 * 1024;
 static BSS_HEAP: StaticCell<[u8; BSS_HEAP_SIZE]> = StaticCell::new();
 
 const SRAM1_START: usize = 0x3FFE_8001;
@@ -33,11 +33,13 @@ pub fn get_memory_stats(monitor: &mut lv_mem_monitor_t) {
     unsafe {
         static mut MAX_USED: usize = 0;
         let heap = &esp_alloc::HEAP;
-        let total = heap.free() + heap.used();
+        let stats = heap.stats();
+        let used = stats.current_usage;
+        let total = stats.size;
         monitor.free_size = heap.free();
         monitor.total_size = total;
-        monitor.used_pct = (heap.used() * 100 / total) as u8;
-        let max_used = usize::max(MAX_USED, heap.used());
+        monitor.used_pct = (used * 100 / total) as u8;
+        let max_used = usize::max(MAX_USED, used);
         monitor.max_used = max_used;
         MAX_USED = max_used;
     }

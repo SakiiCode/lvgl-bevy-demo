@@ -35,7 +35,7 @@ use mipidsi::Builder;
 use mipidsi::interface::SpiInterface;
 use mipidsi::models::ST7789;
 use static_cell::StaticCell;
-use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
+use xpt2046::{CalibrationData, TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
 extern crate alloc;
 
@@ -134,7 +134,16 @@ async fn main(_spawner: Spawner) -> ! {
     )
     .unwrap();
 
-    let mut touch = Xpt2046::new(touch_driver, None);
+    let calibration_data = CalibrationData {
+        alpha_x: -0.09,
+        beta_x: 0.001,
+        delta_x: 345.0,
+        alpha_y: 0.0008,
+        beta_y: -0.07,
+        delta_y: 250.0,
+    };
+
+    let mut touch = Xpt2046::new(touch_driver, Some(calibration_data));
 
     //===========================================================================================================
     //                               Create the User Interface
@@ -142,13 +151,13 @@ async fn main(_spawner: Spawner) -> ! {
 
     Output::new(peripherals.GPIO21, Level::High, OutputConfig::default());
 
-    if !touch.calibrated() {
-        // Display is uncalibrated, resolve that before we do anything else.
-        let _output = touch
-            .intrusive_calibration(&mut tft_display, &mut Delay::default())
-            .expect("Could not calibrate");
-        //defmt::dbg!(&output);
-    }
+    // if !touch.calibrated() {
+    //     // Display is uncalibrated, resolve that before we do anything else.
+    //     let output = touch
+    //         .intrusive_calibration(&mut tft_display, &mut Delay::default())
+    //         .expect("Could not calibrate");
+    //     defmt::debug!("{}", DebugCalibrationData(output));
+    // }
 
     let mut display = Display::new(HOR_RES as i32, VER_RES as i32);
     let buffer =
@@ -273,5 +282,30 @@ fn get_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
             LATEST_TOUCH_STATUS = latest_touch_status;
         }
         return LATEST_TOUCH_STATUS;
+    }
+}
+
+#[allow(unused)]
+struct DebugCalibrationData(CalibrationData);
+
+impl defmt::Format for DebugCalibrationData {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(
+            fmt,
+            "CalibrationData {{
+        alpha_x:{},
+        beta_x: {},
+        delta_x: {},
+        alpha_y: {},
+        beta_y: {},
+        delta_y: {},
+    }}",
+            self.0.alpha_x,
+            self.0.beta_x,
+            self.0.delta_x,
+            self.0.alpha_y,
+            self.0.beta_y,
+            self.0.delta_y
+        );
     }
 }

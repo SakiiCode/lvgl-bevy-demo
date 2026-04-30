@@ -1,27 +1,20 @@
 [package]
-edition      = "2024"
-name         = "lvgl-bevy-demo-nostd"
+name = "lvgl-bevy-demo-nostd"
+version = "0.1.0"
+edition = "2024"
 rust-version = "1.88"
-version      = "0.1.0"
 
 [[bin]]
 name = "lvgl-bevy-demo-nostd"
 path = "./src/bin/main.rs"
 
 [dependencies]
-esp-hal = { version = "~1.0", features = ["defmt", "esp32", "unstable"] }
-
-esp-rtos = { version = "0.2.0", features = [
-  "defmt",
-  "embassy",
-  "esp-alloc",
-  "esp-radio",
-  "esp32",
+critical-section = "1.2.0"
+defmt = "1.0.1"
+defmt-serial = { path = "../defmt-serial", version = "0.12.0", features = [
+  "espflash"
 ] }
-
-defmt                  = "1.0.1"
-esp-bootloader-esp-idf = { version = "0.4.0", features = ["defmt", "esp32"] }
-
+embassy-executor = { version = "0.9.1", features = ["defmt"] }
 embassy-net = { version = "0.7.1", features = [
   "defmt",
   "dhcpv4",
@@ -29,6 +22,7 @@ embassy-net = { version = "0.7.1", features = [
   "tcp",
   "udp",
 ] }
+embassy-time = { version = "0.5.0", features = ["defmt"] }
 embedded-io = { version = "0.7.1", features = ["defmt"] }
 embedded-io-async = { version = "0.7.0", features = ["defmt"] }
 esp-alloc = { version = "0.9.0", features = ["defmt"] }
@@ -37,10 +31,9 @@ esp-backtrace = { version = "0.18.1", features = [
   "esp32",
   "panic-handler",
 ] }
+esp-bootloader-esp-idf = { version = "0.4.0", features = ["defmt", "esp32"] }
+esp-hal = { version = "~1.0", features = ["defmt", "esp32", "unstable"] }
 esp-println = { version = "0.16.1", features = ["defmt-espflash", "esp32"] }
-# for more networking protocol support see https://crates.io/crates/edge-net
-embassy-executor = { version = "0.9.1", features = ["defmt"] }
-embassy-time = { version = "0.5.0", features = ["defmt"] }
 esp-radio = { version = "0.17.0", features = [
   "defmt",
   "esp-alloc",
@@ -48,6 +41,12 @@ esp-radio = { version = "0.17.0", features = [
   "smoltcp",
   "unstable",
   "wifi",
+] }
+esp-rtos = { version = "0.2.0", features = [
+  "embassy",
+  "esp-alloc",
+  "esp-radio",
+  "esp32",
 ] }
 smoltcp = { version = "0.12.0", default-features = false, features = [
   "defmt",
@@ -62,21 +61,18 @@ smoltcp = { version = "0.12.0", default-features = false, features = [
   "socket-tcp",
   "socket-udp",
 ] }
-
-critical-section = "1.2.0"
-static_cell      = "2.1.1"
-
+static_cell = "2.1.1"
 
 [profile.dev]
 # Rust debug is too slow.
-# For debug builds always builds with some optimization
-opt-level = "s"
+# For debug builds always build with some optimization
+opt-level = "z"
 
 [profile.release]
-codegen-units    = 1     # LLVM can perform better optimizations using a single thread
-debug            = 2
+opt-level = "s"
+debug = 2
 debug-assertions = false
-incremental      = false
-lto              = 'fat'
-opt-level        = 's'
-overflow-checks  = false
+overflow-checks = false
+lto = "fat"
+incremental = false
+codegen-units = 1  # LLVM can perform better optimizations using a single thread

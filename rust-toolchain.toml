@@ -1,2 +1,3 @@
 [toolchain]
+# tombi: lint.rules.string-pattern.disabled = true
 channel = "esp"

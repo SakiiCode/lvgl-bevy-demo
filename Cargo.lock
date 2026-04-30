@@ -285,6 +285,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "defmt-serial"
+version = "0.12.0"
+dependencies = [
+ "critical-section",
+ "defmt 0.3.100",
+ "embedded-io 0.7.1",
+ "portable-atomic",
+]
+
+[[package]]
 name = "delegate"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -850,7 +860,6 @@ checksum = "162ec711c8d06e79c67b75d01595539e86b0aac209643af98ca87a12250428b3"
 dependencies = [
  "allocator-api2",
  "cfg-if",
- "defmt 1.0.1",
  "document-features",
  "embassy-executor",
  "embassy-sync 0.7.2",
@@ -1190,6 +1199,7 @@ version = "0.1.0"
 dependencies = [
  "critical-section",
  "defmt 1.0.1",
+ "defmt-serial",
  "embassy-executor",
  "embassy-net",
  "embassy-time",

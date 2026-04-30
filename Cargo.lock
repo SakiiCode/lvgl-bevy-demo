@@ -1122,17 +1122,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "esp-radio-rtos-driver"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bd75cd9073a90ffaa53db0bf17df7dc14164f2407a6ff36c725d2d1f78ff494"
-dependencies = [
- "cfg-if",
- "esp-sync",
- "portable-atomic",
-]
-
-[[package]]
 name = "esp-riscv-rt"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1162,19 +1151,16 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "551f90766e1527edaa0c91e8d559e9e2a60397b545e93357ac61fb31845e5712"
 dependencies = [
- "allocator-api2",
  "cfg-if",
  "document-features",
  "embassy-executor",
  "embassy-sync 0.8.0",
  "embassy-time-driver",
  "embassy-time-queue-utils",
- "esp-alloc",
  "esp-config",
  "esp-hal",
  "esp-hal-procmacros",
  "esp-metadata-generated",
- "esp-radio-rtos-driver",
  "esp-rom-sys",
  "esp-sync",
  "portable-atomic",
@@ -1688,7 +1674,6 @@ name = "lvgl-bevy-demo-nostd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "critical-section",
  "defmt 1.0.1",
  "defmt-serial",
  "embassy-executor",

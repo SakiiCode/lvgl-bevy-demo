@@ -1,7 +1,7 @@
 use std::{
     ffi::CString,
     sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering},
+        atomic::{AtomicBool, Ordering},
         Mutex,
     },
 };
@@ -18,14 +18,14 @@ use esp_idf_svc::hal::{
     },
     units::MegaHertz,
 };
-use esp_idf_svc::sys::xTaskGetTickCount;
+use esp_idf_svc::sys::{self as esp_idf_sys, xTaskGetTickCount, MALLOC_CAP_DEFAULT};
 use lv_bevy_ecs::{
-    display::{Display, DrawBuf},
+    display::{Display, DrawBuffer},
     error,
     events::EventCode,
     functions::*,
     info,
-    input::{BufferStatus, Indev, InputEvent, InputState, Pointer},
+    input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
     malloc::provide_mem_monitor_impl,
     support::{Align, LabelLongMode},
     sys::{lv_mem_monitor_t, lv_tick_set_cb, LV_DEF_REFR_PERIOD},
@@ -37,10 +37,7 @@ use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
 pub fn get_memory_stats(monitor: &mut lv_mem_monitor_t) {
     unsafe {
-        use esp_idf_svc::sys as esp_idf_sys;
-        use esp_idf_sys::MALLOC_CAP_DEFAULT;
-
-        static MAX_USED: AtomicU32 = AtomicU32::new(0);
+        static mut MAX_USED: u32 = 0;
 
         let total = esp_idf_sys::heap_caps_get_total_size(MALLOC_CAP_DEFAULT);
         monitor.total_size = total;
@@ -52,9 +49,8 @@ pub fn get_memory_stats(monitor: &mut lv_mem_monitor_t) {
         monitor.free_biggest_size = largest_free;
 
         let used = total - free;
-        //MAX_USED.fetch_max(used as u32, Ordering::Relaxed);
-        let new_max = u32::max(MAX_USED.load(Ordering::Relaxed), used as u32);
-        MAX_USED.store(new_max, Ordering::Relaxed);
+        let new_max = u32::max(MAX_USED, used as u32);
+        MAX_USED = new_max;
         monitor.max_used = new_max as usize;
 
         let used_pct = (used) * 100 / total;
@@ -82,14 +78,14 @@ fn main() -> Result<()> {
 
     const HOR_RES: u32 = 320;
     const VER_RES: u32 = 240;
-    const LINE_HEIGHT: u32 = VER_RES / 20;
+    const BUF_HEIGHT: u32 = VER_RES / 20;
 
     let mut delay: Delay = Default::default();
 
     let peripherals = Peripherals::take()?;
     let pins = peripherals.pins;
 
-    let mut buffer_ref = [0u8; 320]; //SCREEN_BUFFER.init([0u8; 320]);
+    let mut buffer_ref = [0u8; 512]; //SCREEN_BUFFER.init([0u8; 320]);
     let di = SpiInterface::new(
         SpiDeviceDriver::new_single(
             peripherals.spi2,
@@ -148,7 +144,8 @@ fn main() -> Result<()> {
     }
 
     let mut display = Display::new(HOR_RES as i32, VER_RES as i32);
-    let buffer = DrawBuf::<{ (HOR_RES * LINE_HEIGHT) as usize }, Rgb565>::new(HOR_RES, LINE_HEIGHT);
+    let buffer =
+        DrawBuffer::<{ (HOR_RES * BUF_HEIGHT) as usize }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
     info!("Display OK");
     display.register(buffer, |refresh| {
         let area = refresh.rectangle;
@@ -157,21 +154,11 @@ fn main() -> Result<()> {
         tft_display
             .fill_contiguous(&area, data)
             .expect("Cannot fill display");
+
+        refresh.display.flush_ready();
     });
 
     info!("Draw Buffer OK");
-
-    //let mut world = LvglWorld::default();
-    //world.add_observer(on_insert_children);
-
-    //info!("World OK");
-
-    // Create screen and widgets
-    //let mut screen: lvgl::Screen = display.get_scr_act().map_err(BoardError::DISPLAY)?;
-
-    // let mut screen_style = Style::default();
-    // screen_style.set_bg_color(Color::from_rgb((100, 100, 100)));
-    // screen.add_style(Part::Main, &mut screen_style);
 
     let mut arc = Arc::new();
     arc.set_size(150, 150);
@@ -195,12 +182,9 @@ fn main() -> Result<()> {
         label.set_text(text.as_c_str());
     });
 
-    /*world.spawn(label);
-    world.spawn(arc);*/
-
     info!("Widgets OK");
 
-    let _pointer = Indev::<Pointer>::new(|| {
+    let _pointer = InputDevice::<Pointer>::new(|| {
         let event = touch.get_touch_event();
         if let Err(error) = event {
             error!("{}", error)

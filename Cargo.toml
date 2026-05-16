@@ -4,9 +4,16 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 
+[lib]
+bench = false
+path = "src/lib.rs"
+test = false
+
 [[bin]]
+bench = false
 name = "lvgl-bevy-demo-nostd"
 path = "./src/bin/main.rs"
+test = false
 
 [dependencies]
 anyhow = { version = "1.0.100", default-features = false }
@@ -36,7 +43,7 @@ esp-rtos = { version = "0.3.0", features = [
   "embassy",
   "esp32",
 ] }
-lv_bevy_ecs = { version = "0.10.0-alpha", features = [
+lv_bevy_ecs = { version = "0.10.0-beta", features = [
   "critical-section",
   "defmt",
   "no_ecs",

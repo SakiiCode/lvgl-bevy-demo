@@ -1633,9 +1633,9 @@ dependencies = [
 
 [[package]]
 name = "lv_bevy_ecs"
-version = "0.10.0-alpha.4"
+version = "0.10.0-beta.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f7d7add488b90ffdc4dc0a89f81ee94e9b554a37c232a64168fb544e44e1f6"
+checksum = "c812d7e33424ebc809d12dced2b386cc806e707c316948854a53a64511e90147"
 dependencies = [
  "bevy_ecs",
  "cfg-if",

@@ -80,7 +80,7 @@ async fn main(_spawner: Spawner) -> ! {
 
     lv_bevy_ecs::functions::lv_init();
     lv_bevy_ecs::logging::connect();
-    lv_bevy_ecs::malloc::provide_mem_monitor_impl(get_memory_stats);
+    lv_bevy_ecs::malloc::set_mem_monitor(get_memory_stats);
 
     const HOR_RES: u32 = 320;
     const VER_RES: u32 = 240;

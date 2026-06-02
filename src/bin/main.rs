@@ -86,9 +86,12 @@ async fn main(_spawner: Spawner) -> ! {
     const VER_RES: u32 = 240;
     const BUF_HEIGHT: u32 = VER_RES / 20;
 
-    let mut delay: Delay = Default::default();
+    static DELAY: StaticCell<Delay> = StaticCell::new();
+    let delay = DELAY.init(Delay::default());
 
-    let mut buffer_ref = [0u8; 512]; //SCREEN_BUFFER.init([0u8; 320]);
+    static SCREEN_BUFFER: StaticCell<[u8; 512]> = StaticCell::new();
+    let buffer_ref = SCREEN_BUFFER.init([0u8; 512]);
+
     let di = SpiInterface::new(
         ExclusiveDevice::new(
             Spi::new(
@@ -100,11 +103,11 @@ async fn main(_spawner: Spawner) -> ! {
             .with_miso(peripherals.GPIO12)
             .with_sck(peripherals.GPIO14),
             Output::new(peripherals.GPIO15, Level::High, OutputConfig::default()),
-            &mut delay,
+            delay,
         )
         .unwrap(),
         Output::new(peripherals.GPIO2, Level::High, OutputConfig::default()),
-        &mut buffer_ref,
+        buffer_ref,
     );
 
     let mut tft_display = Builder::new(ST7789, di)
@@ -281,7 +284,7 @@ fn get_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
         if let Some(latest_touch_status) = next_touch_status {
             LATEST_TOUCH_STATUS = latest_touch_status;
         }
-        return LATEST_TOUCH_STATUS;
+        LATEST_TOUCH_STATUS
     }
 }
 

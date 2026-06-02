@@ -231,6 +231,8 @@ dependencies = [
 [[package]]
 name = "bindgen"
 version = "0.72.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
 dependencies = [
  "bitflags 2.11.0",
  "cexpr",
@@ -1591,6 +1593,8 @@ dependencies = [
 [[package]]
 name = "lightvgl-sys"
 version = "9.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9176d90bd2b890d58647fb280143ec1554a3526ed76d2a78ca88f0cf3845da58"
 dependencies = [
  "bindgen",
  "cc",
@@ -1631,6 +1635,8 @@ dependencies = [
 [[package]]
 name = "lv_bevy_ecs"
 version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54f99ccb1e5d7c8964fac6bac132344c4de2de73001495676f46a73abc588fca"
 dependencies = [
  "bevy_ecs",
  "cfg-if",
@@ -1651,6 +1657,8 @@ dependencies = [
 [[package]]
 name = "lv_codegen"
 version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da4f07ca542168871dcebee7d1f512228c6cb5572145d1c7c8a49fda23dc2ae5"
 dependencies = [
  "Inflector",
  "constptr",

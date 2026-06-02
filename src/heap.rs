@@ -11,7 +11,7 @@ const SRAM1_END: usize = 0x4000_0000;
 pub fn setup_heap() {
     unsafe {
         esp_alloc::HEAP.add_region(esp_alloc::HeapRegion::new(
-            BSS_HEAP.uninit().as_mut_ptr() as *mut u8,
+            BSS_HEAP.uninit().as_mut_ptr().cast(),
             BSS_HEAP_SIZE,
             esp_alloc::MemoryCapability::Internal.into(),
         ));

@@ -41,7 +41,7 @@ esp-rtos = { version = "0.3.0", features = [
   "embassy",
   "esp32",
 ] }
-lv_bevy_ecs = { version = "0.10.0", features = [
+lv_bevy_ecs = { path="../lv_bevy_ecs", version = "0.11.0-alpha", features = [
   "critical-section",
   "defmt",
   "no_ecs",

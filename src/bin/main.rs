@@ -82,9 +82,9 @@ async fn main(_spawner: Spawner) -> ! {
     lv_bevy_ecs::logging::connect();
     lv_bevy_ecs::malloc::set_mem_monitor(get_memory_stats);
 
-    const HOR_RES: u32 = 320;
-    const VER_RES: u32 = 240;
-    const BUF_HEIGHT: u32 = VER_RES / 20;
+    const HOR_RES: usize = 320;
+    const VER_RES: usize = 240;
+    const BUF_HEIGHT: usize = VER_RES / 20;
 
     static DELAY: StaticCell<Delay> = StaticCell::new();
     let delay = DELAY.init(Delay::default());
@@ -162,11 +162,11 @@ async fn main(_spawner: Spawner) -> ! {
     //     defmt::debug!("{}", DebugCalibrationData(output));
     // }
 
-    let mut display = Display::new(HOR_RES as i32, VER_RES as i32);
+    let mut display = Display::new(HOR_RES, VER_RES);
     let buffer =
-        DrawBuffer::<{ (HOR_RES * BUF_HEIGHT) as usize }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
+        DrawBuffer::<{ HOR_RES * BUF_HEIGHT }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
     defmt::info!("Display OK");
-    display.register(buffer, |refresh| {
+    display.register(buffer, move |refresh| {
         let area = refresh.rectangle;
         let data = refresh.colors.iter().cloned();
 
@@ -174,7 +174,6 @@ async fn main(_spawner: Spawner) -> ! {
             .fill_contiguous(&area, data)
             .expect("Cannot fill display");
 
-        refresh.display.flush_ready();
     });
 
     defmt::info!("Draw Buffer OK");
@@ -191,7 +190,7 @@ async fn main(_spawner: Spawner) -> ! {
     label.set_text_static(c"asdasdasd");
     label.set_align(Align::TopMid.into());
 
-    arc.add_event_cb(EventCode::ValueChanged, |mut event| {
+    arc.add_event_cb(EventCode::ValueChanged, move |mut event| {
         let Some(obj) = event.get_target_obj() else {
             defmt::warn!("Target obj was null");
             return;

@@ -1592,9 +1592,7 @@ dependencies = [
 
 [[package]]
 name = "lightvgl-sys"
-version = "9.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9176d90bd2b890d58647fb280143ec1554a3526ed76d2a78ca88f0cf3845da58"
+version = "9.5.4-beta.0"
 dependencies = [
  "bindgen",
  "cc",
@@ -1634,12 +1632,9 @@ dependencies = [
 
 [[package]]
 name = "lv_bevy_ecs"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54f99ccb1e5d7c8964fac6bac132344c4de2de73001495676f46a73abc588fca"
+version = "0.11.0-alpha.1"
 dependencies = [
  "bevy_ecs",
- "cfg-if",
  "constptr",
  "defmt 1.0.1",
  "embedded-graphics",
@@ -1651,14 +1646,11 @@ dependencies = [
  "quote",
  "syn 2.0.117",
  "thiserror",
- "which",
 ]
 
 [[package]]
 name = "lv_codegen"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da4f07ca542168871dcebee7d1f512228c6cb5572145d1c7c8a49fda23dc2ae5"
+version = "0.4.2"
 dependencies = [
  "Inflector",
  "constptr",
@@ -2549,15 +2541,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49757b3c82ebf16c57d69365a142940b384176c24df52a087fb748e2085359ea"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "which"
-version = "8.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81995fafaaaf6ae47a7d0cc83c67caf92aeb7e5331650ae6ff856f7c0c60c459"
-dependencies = [
- "libc",
 ]
 
 [[package]]

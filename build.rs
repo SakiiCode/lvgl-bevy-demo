@@ -3,6 +3,6 @@ fn main() {
     // put them into .cargo/config.toml
     // https://github.com/SakiiCode/lv_bevy_ecs?tab=readme-ov-file#building-for-embedded
     let _libclang_path = env!("LIBCLANG_PATH");
-    let _bindgen_extra_clang_args = env!("BINDGEN_EXTRA_CLANG_ARGS");
+    let _lv_sysroot = env!("LV_SYSROOT");
     embuild::espidf::sysenv::output();
 }

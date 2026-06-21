@@ -26,13 +26,14 @@ use lv_bevy_ecs::{
     functions::*,
     info,
     input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer},
-    malloc::provide_mem_monitor_impl,
+    malloc::set_mem_monitor,
     support::{Align, LabelLongMode},
     sys::{lv_mem_monitor_t, lv_tick_set_cb, LV_DEF_REFR_PERIOD},
     warn,
     widgets::{Arc, Label, Wdg},
 };
 use mipidsi::{interface::SpiInterface, models::ST7789, Builder};
+use static_cell::StaticCell;
 use xpt2046::{TouchEvent, TouchKind, TouchScreen, Xpt2046};
 
 pub fn get_memory_stats(monitor: &mut lv_mem_monitor_t) {
@@ -74,18 +75,19 @@ fn main() -> Result<()> {
     // Use LVGL logger instead
     //lv_log_init();
 
-    provide_mem_monitor_impl(get_memory_stats);
+    set_mem_monitor(get_memory_stats);
 
-    const HOR_RES: u32 = 320;
-    const VER_RES: u32 = 240;
-    const BUF_HEIGHT: u32 = VER_RES / 20;
+    const HOR_RES: usize = 320;
+    const VER_RES: usize = 240;
+    const BUF_HEIGHT: usize = VER_RES / 20;
 
     let mut delay: Delay = Default::default();
 
     let peripherals = Peripherals::take()?;
     let pins = peripherals.pins;
 
-    let mut buffer_ref = [0u8; 512]; //SCREEN_BUFFER.init([0u8; 320]);
+    static SCREEN_BUFFER: StaticCell<[u8; 512]> = StaticCell::new();
+    let buffer_ref = SCREEN_BUFFER.init([0u8; 512]);
     let di = SpiInterface::new(
         SpiDeviceDriver::new_single(
             peripherals.spi2,
@@ -97,7 +99,7 @@ fn main() -> Result<()> {
             &Config::default().baudrate(MegaHertz(40).into()),
         )?,
         PinDriver::output(pins.gpio2)?,
-        &mut buffer_ref,
+        buffer_ref,
     );
 
     let mut tft_display = Builder::new(ST7789, di)
@@ -143,11 +145,10 @@ fn main() -> Result<()> {
         dbg!(&output);
     }
 
-    let mut display = Display::new(HOR_RES as i32, VER_RES as i32);
-    let buffer =
-        DrawBuffer::<{ (HOR_RES * BUF_HEIGHT) as usize }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
+    let mut display = Display::new(HOR_RES, VER_RES);
+    let buffer = DrawBuffer::<{ HOR_RES * BUF_HEIGHT }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
     info!("Display OK");
-    display.register(buffer, |refresh| {
+    display.register(buffer, move |refresh| {
         let area = refresh.rectangle;
         let data = refresh.colors.iter().cloned();
 
@@ -155,7 +156,7 @@ fn main() -> Result<()> {
             .fill_contiguous(&area, data)
             .expect("Cannot fill display");
 
-        refresh.display.flush_ready();
+        //refresh.display.flush_ready();
     });
 
     info!("Draw Buffer OK");
@@ -172,7 +173,7 @@ fn main() -> Result<()> {
     label.set_text_static(c"asdasdasd");
     label.set_align(Align::TopMid.into());
 
-    arc.add_event_cb(EventCode::ValueChanged, |mut event| {
+    arc.add_event_cb(EventCode::ValueChanged, move |mut event| {
         let Some(obj) = event.get_target_obj() else {
             warn!("Target obj was null");
             return;

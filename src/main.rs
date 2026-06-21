@@ -6,7 +6,6 @@ use std::{
     },
 };
 
-use anyhow::Result;
 use embedded_graphics::{draw_target::DrawTarget, pixelcolor::Rgb565, prelude::Point};
 use esp_idf_svc::hal::{
     delay::Delay,
@@ -61,7 +60,7 @@ pub fn get_memory_stats(monitor: &mut lv_mem_monitor_t) {
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
     esp_idf_svc::sys::link_patches();

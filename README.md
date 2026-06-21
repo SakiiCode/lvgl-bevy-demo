@@ -19,13 +19,12 @@ You need additional env variables in `.cargo/config-local.toml` and the PATH app
 ```toml
 [env]
 LIBCLANG_PATH = '...'
-BINDGEN_EXTRA_CLANG_ARGS = '--sysroot ...'
-LV_COMPILE_ARGS='-I%USERPROFILE%\.rustup\toolchains\esp\xtensa-esp-elf\xtensa-esp-elf\include' # Windows only
+LV_SYSROOT = '...'
 ```
 
 `LIBCLANG_PATH` can be found in ~/export-esp.sh
 
-`BINDGEN_EXTRA_CLANG_ARGS` sysroot can be found with `xtensa-esp32-elf-ld --print-sysroot`
+`LV_SYSROOT` sysroot can be found with `xtensa-esp32-elf-ld --print-sysroot`
 
 ### Flashing
 

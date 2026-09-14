@@ -11,7 +11,6 @@ use core::cell::RefCell;
 
 use alloc::{ffi::CString, string::ToString};
 use critical_section::Mutex;
-use defmt_serial as _;
 use embassy_executor::Spawner;
 use embassy_futures::yield_now;
 use embassy_time::{Duration, Instant, Timer};
@@ -25,8 +24,8 @@ use esp_hal::gpio::{Level, Output, OutputConfig};
 use esp_hal::spi::master::Spi;
 use esp_hal::time::Rate;
 use esp_hal::timer::timg::TimerGroup;
-use esp_hal::uart::{Config, Uart};
 use esp_hal::{Blocking, spi};
+use esp_println as _;
 use lv_bevy_ecs::display::{Display, DrawBuffer};
 use lv_bevy_ecs::events::EventCode;
 use lv_bevy_ecs::functions::{NextTimerPeriod, lv_tick_set_cb, lv_timer_handler};
@@ -45,8 +44,6 @@ extern crate alloc;
 // This creates a default app-descriptor required by the esp-idf bootloader.
 // For more information see: <https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/app_image_format.html#application-description>
 esp_bootloader_esp_idf::esp_app_desc!();
-
-static SERIAL: StaticCell<Uart<'static, Blocking>> = StaticCell::new();
 
 // #[panic_handler]
 // pub fn panic(info: &::core::panic::PanicInfo) -> ! {
@@ -67,14 +64,6 @@ async fn main(spawner: Spawner) -> ! {
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
     let peripherals = esp_hal::init(config);
-    let uart = Uart::new(peripherals.UART0, Config::default())
-        .unwrap()
-        .with_rx(peripherals.GPIO3)
-        .with_tx(peripherals.GPIO1);
-
-    let serial = SERIAL.init(uart);
-
-    defmt_serial::defmt_serial(serial);
 
     lvgl_bevy_demo_nostd::heap::setup_heap();
 

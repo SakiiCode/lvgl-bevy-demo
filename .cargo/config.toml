@@ -8,7 +8,7 @@ runner = "espflash flash --monitor --chip esp32 --log-format defmt"
 # runner = "socat /dev/ttyACM0,rawer,b115200 STDOUT | defmt-print -e "
 
 [env]
-DEFMT_LOG = "trace"
+DEFMT_LOG = "debug"
 DEP_LV_CONFIG_PATH = { relative = true, value = "." }
 CROSS_COMPILE = "xtensa-esp32-elf"
 ESP_BACKTRACE_CONFIG_BACKTRACE_FRAMES = "20"

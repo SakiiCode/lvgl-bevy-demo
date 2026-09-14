@@ -19,7 +19,6 @@ test = false
 anyhow = { version = "1.0.100", default-features = false }
 critical-section = "1.2.0"
 defmt = "1.1.0"
-defmt-serial = { version = "0.14.0", features = ["espflash"] }
 embassy-executor = { version = "0.10.0", features = ["defmt"] }
 embassy-futures = "0.1.2"
 embassy-time = { version = "0.5.0", features = ["defmt"] }
@@ -35,6 +34,7 @@ esp-backtrace = { version = "0.20.0", features = [
 ] }
 esp-bootloader-esp-idf = { version = "0.5.0", features = ["defmt", "esp32"] }
 esp-hal = { version = "~1.2", features = ["defmt", "esp32", "unstable"] }
+esp-println = { version = "0.18.0", features = ["defmt-espflash", "esp32"] }
 esp-rtos = { version = "0.4.0", features = [
   "embassy",
   "esp32",

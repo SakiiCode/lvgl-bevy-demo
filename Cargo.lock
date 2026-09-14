@@ -1782,9 +1782,11 @@ name = "lvgl-bevy-demo-nostd"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "critical-section",
  "defmt 1.1.1",
  "defmt-serial",
  "embassy-executor",
+ "embassy-futures",
  "embassy-time",
  "embedded-graphics",
  "embedded-hal-bus",

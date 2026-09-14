@@ -7,8 +7,13 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
+use core::cell::RefCell;
+
+use alloc::{ffi::CString, string::ToString};
+use critical_section::Mutex;
 use defmt_serial as _;
 use embassy_executor::Spawner;
+use embassy_futures::yield_now;
 use embassy_time::{Duration, Instant, Timer};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::{DrawTarget, Point};
@@ -23,15 +28,17 @@ use esp_hal::timer::timg::TimerGroup;
 use esp_hal::uart::{Config, Uart};
 use esp_hal::{Blocking, spi};
 use lv_bevy_ecs::display::{Display, DrawBuffer};
+use lv_bevy_ecs::events::EventCode;
 use lv_bevy_ecs::functions::{NextTimerPeriod, lv_tick_set_cb, lv_timer_handler};
 use lv_bevy_ecs::input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer};
-use lv_bevy_ecs::support::LvRgb565;
+use lv_bevy_ecs::support::{Align, LabelLongMode, LvRgb565};
+use lv_bevy_ecs::widgets::{Arc, Label, Wdg};
 use lvgl_bevy_demo_nostd::heap::get_memory_stats;
 use mipidsi::Builder;
 use mipidsi::interface::SpiInterface;
 use mipidsi::models::ST7789;
 use static_cell::StaticCell;
-use xpt2046::{CalibrationData, TouchEvent, TouchKind, TouchScreen, Xpt2046};
+use xpt2046::{CalibrationData, TouchKind, TouchScreen, Xpt2046};
 
 extern crate alloc;
 
@@ -47,12 +54,15 @@ static SERIAL: StaticCell<Uart<'static, Blocking>> = StaticCell::new();
 //     loop {}
 // }
 
+static LATEST_TOUCH_STATUS: Mutex<RefCell<InputEvent<Pointer>>> =
+    Mutex::new(RefCell::new(InputEvent::new(Point::zero())));
+
 #[allow(
     clippy::large_stack_frames,
     reason = "it's not unusual to allocate larger buffers etc. in main"
 )]
 #[esp_rtos::main]
-async fn main(_spawner: Spawner) -> ! {
+async fn main(spawner: Spawner) -> ! {
     // generator version: 1.2.0
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
@@ -135,13 +145,13 @@ async fn main(_spawner: Spawner) -> ! {
     let calibration_data = CalibrationData {
         alpha_x: -0.09,
         beta_x: 0.001,
-        delta_x: 345.0,
-        alpha_y: 0.0008,
-        beta_y: -0.07,
-        delta_y: 250.0,
+        delta_x: 335.0,
+        alpha_y: 0.001,
+        beta_y: -0.066,
+        delta_y: 252.0,
     };
 
-    let mut touch = Xpt2046::new(touch_driver, Some(calibration_data));
+    let touch = Xpt2046::new(touch_driver, Some(calibration_data));
 
     //===========================================================================================================
     //                               Create the User Interface
@@ -157,6 +167,8 @@ async fn main(_spawner: Spawner) -> ! {
     //     defmt::debug!("{}", DebugCalibrationData(output));
     // }
 
+    spawner.spawn(touch_task(touch).unwrap());
+
     let mut display = Display::new(HOR_RES, VER_RES);
     let buffer = DrawBuffer::<LvRgb565>::new(HOR_RES, BUF_HEIGHT);
     defmt::info!("Display OK");
@@ -171,40 +183,36 @@ async fn main(_spawner: Spawner) -> ! {
 
     defmt::info!("Draw Buffer OK");
 
-    // let mut arc = Arc::new();
-    // arc.set_size(150, 150);
-    // arc.set_rotation(135);
-    // arc.set_bg_angles(0, 270);
-    // arc.set_value(10);
-    // arc.set_align(Align::Center.into());
+    let mut arc = Arc::new();
+    arc.set_size(150, 150);
+    arc.set_rotation(135);
+    arc.set_bg_angles(0, 270);
+    arc.set_value(10);
+    arc.set_align(Align::Center.into());
 
-    // let mut label = Label::new();
-    // label.set_long_mode(LabelLongMode::Clip.into());
-    // label.set_text_static(c"asdasdasd");
-    // label.set_align(Align::TopMid.into());
+    let mut label = Label::new();
+    label.set_long_mode(LabelLongMode::Clip.into());
+    label.set_text_static(c"asdasdasd");
+    label.set_align(Align::TopMid.into());
 
-    // arc.add_event_cb(EventCode::ValueChanged, move |mut event| {
-    //     let Some(obj) = event.get_target_obj() else {
-    //         defmt::warn!("Target obj was null");
-    //         return;
-    //     };
-    //     let value = obj.downcast::<Arc<Wdg>>().unwrap().get_value();
-    //     let text = CString::new(value.to_string()).unwrap();
-    //     label.set_text(text.as_c_str());
-    // });
+    arc.add_event_cb(EventCode::ValueChanged, move |mut event| {
+        let Some(obj) = event.get_target_obj() else {
+            defmt::warn!("Target obj was null");
+            return;
+        };
+        let value = obj.downcast::<Arc<Wdg>>().unwrap().get_value();
+        let text = CString::new(value.to_string()).unwrap();
+        label.set_text(text.as_c_str());
+    });
 
-    unsafe {
-        lv_bevy_ecs::sys::lv_demo_widgets();
-    }
+    // unsafe {
+    //     lv_bevy_ecs::sys::lv_demo_widgets();
+    // }
 
     defmt::info!("Widgets OK");
 
     let _pointer = InputDevice::<Pointer>::new(|| {
-        let event = touch.get_touch_event();
-        if let Err(_error) = event {
-            defmt::error!("Error reading touch event");
-        }
-        get_touch_input(event.ok().flatten())
+        critical_section::with(|cs| LATEST_TOUCH_STATUS.borrow_ref(cs).clone())
     });
 
     defmt::info!("Pointer OK");
@@ -235,52 +243,43 @@ async fn main(_spawner: Spawner) -> ! {
     // for inspiration have a look at the examples at https://github.com/esp-rs/esp-hal/tree/esp-hal-v1.0.0/examples
 }
 
-fn get_touch_input(event: Option<TouchEvent>) -> InputEvent<Pointer> {
-    // static IS_POINTER_DOWN: AtomicBool = AtomicBool::new(false);
-    // static LATEST_TOUCH_STATUS: Mutex<InputEvent<Pointer>> =
-    //     Mutex::new(InputEvent::new(Point::zero()));
-    static mut IS_POINTER_DOWN: bool = false;
-    static mut LATEST_TOUCH_STATUS: InputEvent<Pointer> = InputEvent::new(Point::zero());
-
-    unsafe {
-        let Some(event) = event else {
-            return LATEST_TOUCH_STATUS;
+#[embassy_executor::task]
+async fn touch_task(
+    mut touch: Xpt2046<ExclusiveDevice<Spi<'static, Blocking>, Output<'static>, Delay>>,
+) -> ! {
+    loop {
+        let event = match touch.get_touch_event() {
+            Ok(event) => match event {
+                Some(event) => event,
+                None => {
+                    yield_now().await;
+                    continue;
+                }
+            },
+            Err(_error) => {
+                defmt::error!("Error reading touch event");
+                yield_now().await;
+                continue;
+            }
         };
 
-        let mut next_touch_status = None;
+        let next_touch_status = match event.kind {
+            TouchKind::Start | TouchKind::Move => InputEvent {
+                status: BufferStatus::Once,
+                state: InputState::Pressed,
+                data: event.point,
+            },
+            TouchKind::End => InputEvent {
+                status: BufferStatus::Once,
+                state: InputState::Released,
+                data: Point::new(0, 0),
+            },
+        };
 
-        match event.kind {
-            TouchKind::Start => {
-                next_touch_status = Some(InputEvent {
-                    status: BufferStatus::Once,
-                    state: InputState::Pressed,
-                    data: event.point,
-                });
-                IS_POINTER_DOWN = true;
-            }
-            TouchKind::Move => {
-                if IS_POINTER_DOWN {
-                    next_touch_status = Some(InputEvent {
-                        status: BufferStatus::Once,
-                        state: InputState::Pressed,
-                        data: event.point,
-                    });
-                }
-            }
-            TouchKind::End => {
-                next_touch_status = Some(InputEvent {
-                    status: BufferStatus::Once,
-                    state: InputState::Released,
-                    data: Point::new(0, 0),
-                });
-                IS_POINTER_DOWN = false;
-            }
-        }
-
-        if let Some(latest_touch_status) = next_touch_status {
-            LATEST_TOUCH_STATUS = latest_touch_status;
-        }
-        LATEST_TOUCH_STATUS
+        critical_section::with(|cs| {
+            *LATEST_TOUCH_STATUS.borrow_ref_mut(cs) = next_touch_status;
+        });
+        yield_now().await;
     }
 }
 

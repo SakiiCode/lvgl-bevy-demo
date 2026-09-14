@@ -18,7 +18,6 @@ use esp_backtrace as _;
 use esp_hal::clock::CpuClock;
 use esp_hal::delay::Delay;
 use esp_hal::gpio::{Level, Output, OutputConfig};
-use esp_hal::interrupt::software::SoftwareInterruptControl;
 use esp_hal::spi::master::Spi;
 use esp_hal::time::Rate;
 use esp_hal::timer::timg::TimerGroup;
@@ -73,8 +72,7 @@ async fn main(_spawner: Spawner) -> ! {
     lvgl_bevy_demo_nostd::heap::setup_heap();
 
     let timg0 = TimerGroup::new(peripherals.TIMG0);
-    let swint = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-    esp_rtos::start(timg0.timer0, swint.software_interrupt0);
+    esp_rtos::start(timg0.timer0, peripherals.FROM_CPU_INTR0);
 
     defmt::info!("Embassy initialized!");
 
@@ -163,8 +161,7 @@ async fn main(_spawner: Spawner) -> ! {
     // }
 
     let mut display = Display::new(HOR_RES, VER_RES);
-    let buffer =
-        DrawBuffer::<{ HOR_RES * BUF_HEIGHT }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
+    let buffer = DrawBuffer::<{ HOR_RES * BUF_HEIGHT }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
     defmt::info!("Display OK");
     display.register(buffer, move |refresh| {
         let area = refresh.rectangle;
@@ -173,7 +170,6 @@ async fn main(_spawner: Spawner) -> ! {
         tft_display
             .fill_contiguous(&area, data)
             .expect("Cannot fill display");
-
     });
 
     defmt::info!("Draw Buffer OK");

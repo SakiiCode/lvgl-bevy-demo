@@ -7,7 +7,6 @@
 )]
 #![deny(clippy::large_stack_frames)]
 
-use alloc::{ffi::CString, string::ToString};
 use defmt_serial as _;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Instant, Timer};
@@ -24,11 +23,9 @@ use esp_hal::timer::timg::TimerGroup;
 use esp_hal::uart::{Config, Uart};
 use esp_hal::{Blocking, spi};
 use lv_bevy_ecs::display::{Display, DrawBuffer};
-use lv_bevy_ecs::events::EventCode;
 use lv_bevy_ecs::functions::{NextTimerPeriod, lv_tick_set_cb, lv_timer_handler};
 use lv_bevy_ecs::input::{BufferStatus, InputDevice, InputEvent, InputState, Pointer};
-use lv_bevy_ecs::support::{Align, LabelLongMode};
-use lv_bevy_ecs::widgets::{Arc, Label, Wdg};
+use lv_bevy_ecs::support::LvRgb565;
 use lvgl_bevy_demo_nostd::heap::get_memory_stats;
 use mipidsi::Builder;
 use mipidsi::interface::SpiInterface;
@@ -161,11 +158,11 @@ async fn main(_spawner: Spawner) -> ! {
     // }
 
     let mut display = Display::new(HOR_RES, VER_RES);
-    let buffer = DrawBuffer::<{ HOR_RES * BUF_HEIGHT }, Rgb565>::new(HOR_RES, BUF_HEIGHT);
+    let buffer = DrawBuffer::<LvRgb565>::new(HOR_RES, BUF_HEIGHT);
     defmt::info!("Display OK");
     display.register(buffer, move |refresh| {
         let area = refresh.rectangle;
-        let data = refresh.colors.iter().cloned();
+        let data = refresh.colors.iter().map(|px| Rgb565::from(*px));
 
         tft_display
             .fill_contiguous(&area, data)
@@ -174,27 +171,31 @@ async fn main(_spawner: Spawner) -> ! {
 
     defmt::info!("Draw Buffer OK");
 
-    let mut arc = Arc::new();
-    arc.set_size(150, 150);
-    arc.set_rotation(135);
-    arc.set_bg_angles(0, 270);
-    arc.set_value(10);
-    arc.set_align(Align::Center.into());
+    // let mut arc = Arc::new();
+    // arc.set_size(150, 150);
+    // arc.set_rotation(135);
+    // arc.set_bg_angles(0, 270);
+    // arc.set_value(10);
+    // arc.set_align(Align::Center.into());
 
-    let mut label = Label::new();
-    label.set_long_mode(LabelLongMode::Clip.into());
-    label.set_text_static(c"asdasdasd");
-    label.set_align(Align::TopMid.into());
+    // let mut label = Label::new();
+    // label.set_long_mode(LabelLongMode::Clip.into());
+    // label.set_text_static(c"asdasdasd");
+    // label.set_align(Align::TopMid.into());
 
-    arc.add_event_cb(EventCode::ValueChanged, move |mut event| {
-        let Some(obj) = event.get_target_obj() else {
-            defmt::warn!("Target obj was null");
-            return;
-        };
-        let value = obj.downcast::<Arc<Wdg>>().unwrap().get_value();
-        let text = CString::new(value.to_string()).unwrap();
-        label.set_text(text.as_c_str());
-    });
+    // arc.add_event_cb(EventCode::ValueChanged, move |mut event| {
+    //     let Some(obj) = event.get_target_obj() else {
+    //         defmt::warn!("Target obj was null");
+    //         return;
+    //     };
+    //     let value = obj.downcast::<Arc<Wdg>>().unwrap().get_value();
+    //     let text = CString::new(value.to_string()).unwrap();
+    //     label.set_text(text.as_c_str());
+    // });
+
+    unsafe {
+        lv_bevy_ecs::sys::lv_demo_widgets();
+    }
 
     defmt::info!("Widgets OK");
 

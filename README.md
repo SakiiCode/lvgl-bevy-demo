@@ -1,5 +1,7 @@
 # lvgl-bevy-demo
 
+![Screenshot](screenshot.jpg)
+
 This is a `no_std` demo project for [lv_bevy_ecs](https://github.com/SakiiCode/lv_bevy_ecs)
 
 Tested with ESP32 only.
